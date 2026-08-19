@@ -39,7 +39,8 @@ function TransportApp() {
     try {
       // 1. Fetch Traffic Incidents
       const incidentsRes = await fetch('/api/traffic-incidents');
-      if (incidentsRes.ok) {
+      const incContentType = incidentsRes.headers.get('content-type') || '';
+      if (incidentsRes.ok && incContentType.includes('application/json')) {
         const incidentsData = await incidentsRes.json();
         if (incidentsData.success && Array.isArray(incidentsData.value) && incidentsData.value.length > 0) {
           const sanitized = incidentsData.value.map((inc: any, idx: number) => {
@@ -68,7 +69,8 @@ function TransportApp() {
 
       // 2. Fetch Train Service Alerts
       const alertsRes = await fetch('/api/train-service-alerts');
-      if (alertsRes.ok) {
+      const alertContentType = alertsRes.headers.get('content-type') || '';
+      if (alertsRes.ok && alertContentType.includes('application/json')) {
         const alertsData = await alertsRes.json();
         if (alertsData.success && alertsData.value) {
           const alertObj = alertsData.value;
