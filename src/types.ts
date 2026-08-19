@@ -14,7 +14,7 @@ export interface ExpresswayTrafficSegment {
   speedKmh: number;
   flowLevel: TrafficFlowLevel;
   colorHex: string;
-  svgPath: string; // SVG path coordinate string relative to map viewBox (1000x650)
+  coordinates: [number, number][]; // GPS coordinates [lat, lng] for Google Maps polylines
   travelTimeMin: number;
   typicalTimeMin: number;
   incidentsCount: number;
@@ -31,8 +31,10 @@ export interface TrafficIncident {
   timeFormatted: string;
   severity: 'critical' | 'moderate' | 'minor';
   tags: string[];
-  latPercent: number; // percentage on map image for placement (0-100)
-  lngPercent: number; // percentage on map image for placement (0-100)
+  lat: number; // GPS latitude
+  lng: number; // GPS longitude
+  latPercent?: number; // fallback
+  lngPercent?: number; // fallback
   laneClosure?: string;
   estClearance?: string;
   trafficCamUrl?: string;
@@ -74,9 +76,12 @@ export interface ServiceAdvisory {
 
 export interface TrafficCamera {
   id: string;
+  cameraId?: string;
   name: string;
   expressway: string;
   imageUrl: string;
-  latPercent: number;
-  lngPercent: number;
+  lat: number;
+  lng: number;
+  latPercent?: number;
+  lngPercent?: number;
 }

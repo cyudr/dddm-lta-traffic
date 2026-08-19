@@ -11,8 +11,9 @@ import { ApiStatusModal } from './components/ApiStatusModal';
 import { ClockModal } from './components/ClockModal';
 import { TermsModal } from './components/TermsModal';
 import { Footer } from './components/Footer';
+import { LanguageProvider } from './i18n/LanguageContext';
 
-export default function App() {
+function TransportApp() {
   const [currentView, setCurrentView] = useState<ViewMode>('traffic');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [incidents, setIncidents] = useState<TrafficIncident[]>(INITIAL_INCIDENTS);
@@ -40,7 +41,27 @@ export default function App() {
       if (incidentsRes.ok) {
         const incidentsData = await incidentsRes.json();
         if (incidentsData.success && Array.isArray(incidentsData.value) && incidentsData.value.length > 0) {
-          setIncidents(incidentsData.value);
+          const sanitized = incidentsData.value.map((inc: any, idx: number) => {
+            let lat = typeof inc.lat === 'number' && !isNaN(inc.lat) ? inc.lat : undefined;
+            let lng = typeof inc.lng === 'number' && !isNaN(inc.lng) ? inc.lng : undefined;
+
+            if (lat === undefined || lng === undefined) {
+              if (typeof inc.latPercent === 'number' && typeof inc.lngPercent === 'number') {
+                lat = 1.47 - (inc.latPercent / 100) * (1.47 - 1.22);
+                lng = 103.60 + (inc.lngPercent / 100) * (104.04 - 103.60);
+              } else {
+                lat = 1.3325 + (idx * 0.008);
+                lng = 103.8200 + (idx * 0.012);
+              }
+            }
+
+            return {
+              ...inc,
+              lat,
+              lng,
+            };
+          });
+          setIncidents(sanitized);
         }
       }
 
@@ -95,13 +116,14 @@ export default function App() {
       }
 
       setLiveSyncStatus('live');
-      const nowStr = new Date().toLocaleTimeString('en-SG', {
-        timeZone: 'Asia/Singapore',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }) + ' SGT';
+      const nowStr =
+        new Date().toLocaleTimeString('en-SG', {
+          timeZone: 'Asia/Singapore',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }) + ' SGT';
       setLastRefreshedTime(nowStr);
     } catch (err) {
       console.warn('Could not connect to live LTA backend, fallback active:', err);
@@ -150,7 +172,7 @@ export default function App() {
 
       {/* 2. Main Layout Container */}
       <div className="flex flex-1 pt-16">
-        {/* Left Control Center Sidebar */}
+        {/* Right Control Center Sidebar */}
         <Sidebar
           currentView={currentView}
           onSelectView={(view) => {
@@ -220,5 +242,13 @@ export default function App() {
         onClose={() => setIsTermsOpen(false)}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <TransportApp />
+    </LanguageProvider>
   );
 }

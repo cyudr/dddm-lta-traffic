@@ -10,8 +10,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Toa Payoh / CTE Int',
     speedKmh: 18,
     flowLevel: 'congested',
-    colorHex: '#e51d24', // Red
-    svgPath: 'M 400,280 Q 480,260 560,280 Q 640,300 750,290',
+    colorHex: '#d93025', // Google Maps Red
+    coordinates: [
+      [1.332, 103.815],
+      [1.334, 103.835],
+      [1.331, 103.852],
+      [1.328, 103.864]
+    ],
     travelTimeMin: 28,
     typicalTimeMin: 10,
     incidentsCount: 1,
@@ -25,8 +30,14 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Changi Airport',
     speedKmh: 58,
     flowLevel: 'moderate',
-    colorHex: '#fa9e0d', // Amber
-    svgPath: 'M 750,290 L 840,290 L 920,310',
+    colorHex: '#ffa000', // Google Maps Amber
+    coordinates: [
+      [1.328, 103.864],
+      [1.332, 103.905],
+      [1.341, 103.935],
+      [1.352, 103.962],
+      [1.361, 103.988]
+    ],
     travelTimeMin: 14,
     typicalTimeMin: 11,
     incidentsCount: 0,
@@ -40,8 +51,14 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Tuas Flyover',
     speedKmh: 74,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 400,280 L 290,290 L 160,340 L 70,360',
+    colorHex: '#0f9d58', // Google Maps Green
+    coordinates: [
+      [1.348, 103.773],
+      [1.345, 103.738],
+      [1.342, 103.705],
+      [1.332, 103.665],
+      [1.328, 103.638]
+    ],
     travelTimeMin: 16,
     typicalTimeMin: 15,
     incidentsCount: 0,
@@ -55,8 +72,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Jurong Town Hall',
     speedKmh: 35,
     flowLevel: 'slow',
-    colorHex: '#f97316', // Orange
-    svgPath: 'M 460,420 Q 380,410 300,430 L 180,450',
+    colorHex: '#ff7043', // Google Maps Orange
+    coordinates: [
+      [1.295, 103.785],
+      [1.305, 103.772],
+      [1.315, 103.755],
+      [1.323, 103.735]
+    ],
     travelTimeMin: 22,
     typicalTimeMin: 12,
     incidentsCount: 1,
@@ -70,8 +92,12 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Marina Coastal',
     speedKmh: 68,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 460,420 L 530,450 L 600,470',
+    colorHex: '#0f9d58',
+    coordinates: [
+      [1.295, 103.785],
+      [1.282, 103.812],
+      [1.272, 103.835]
+    ],
     travelTimeMin: 9,
     typicalTimeMin: 9,
     incidentsCount: 0,
@@ -85,8 +111,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Moulmein / Bukit Timah Exit',
     speedKmh: 24,
     flowLevel: 'congested',
-    colorHex: '#e51d24', // Red
-    svgPath: 'M 540,190 L 540,270 L 530,360 L 520,440',
+    colorHex: '#d93025',
+    coordinates: [
+      [1.342, 103.86],
+      [1.328, 103.854],
+      [1.318, 103.848],
+      [1.305, 103.843]
+    ],
     travelTimeMin: 26,
     typicalTimeMin: 11,
     incidentsCount: 1,
@@ -100,8 +131,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Seletar Expressway',
     speedKmh: 56,
     flowLevel: 'moderate',
-    colorHex: '#fa9e0d', // Amber
-    svgPath: 'M 525,440 L 535,360 L 545,270 L 545,190',
+    colorHex: '#ffa000',
+    coordinates: [
+      [1.305, 103.843],
+      [1.332, 103.855],
+      [1.365, 103.858],
+      [1.385, 103.855]
+    ],
     travelTimeMin: 13,
     typicalTimeMin: 11,
     incidentsCount: 0,
@@ -115,8 +151,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Airport Road Exit',
     speedKmh: 42,
     flowLevel: 'slow',
-    colorHex: '#f97316', // Orange
-    svgPath: 'M 620,440 Q 640,360 650,270 L 680,180',
+    colorHex: '#ff7043',
+    coordinates: [
+      [1.295, 103.875],
+      [1.318, 103.882],
+      [1.345, 103.89],
+      [1.368, 103.894]
+    ],
     travelTimeMin: 18,
     typicalTimeMin: 12,
     incidentsCount: 1,
@@ -130,8 +171,14 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Airport Boulevard',
     speedKmh: 65,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 580,480 Q 720,440 850,380 L 920,340',
+    colorHex: '#0f9d58',
+    coordinates: [
+      [1.291, 103.861],
+      [1.298, 103.882],
+      [1.302, 103.91],
+      [1.315, 103.945],
+      [1.355, 103.985]
+    ],
     travelTimeMin: 14,
     typicalTimeMin: 14,
     incidentsCount: 0,
@@ -145,8 +192,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Woodlands South / BKE',
     speedKmh: 78,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 600,160 Q 480,140 380,160',
+    colorHex: '#0f9d58',
+    coordinates: [
+      [1.388, 103.855],
+      [1.405, 103.82],
+      [1.418, 103.792],
+      [1.428, 103.775]
+    ],
     travelTimeMin: 8,
     typicalTimeMin: 8,
     incidentsCount: 0,
@@ -160,8 +212,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'Woodlands Crossing',
     speedKmh: 48,
     flowLevel: 'moderate',
-    colorHex: '#fa9e0d', // Amber
-    svgPath: 'M 360,280 L 360,200 L 360,110',
+    colorHex: '#ffa000',
+    coordinates: [
+      [1.348, 103.773],
+      [1.378, 103.776],
+      [1.412, 103.772],
+      [1.442, 103.768]
+    ],
     travelTimeMin: 14,
     typicalTimeMin: 10,
     incidentsCount: 1,
@@ -175,8 +232,14 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'PIE Changi Exit',
     speedKmh: 80,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 600,160 Q 720,160 810,210 L 890,280',
+    colorHex: '#0f9d58',
+    coordinates: [
+      [1.392, 103.865],
+      [1.398, 103.895],
+      [1.385, 103.925],
+      [1.372, 103.945],
+      [1.355, 103.972]
+    ],
     travelTimeMin: 11,
     typicalTimeMin: 11,
     incidentsCount: 0,
@@ -190,8 +253,12 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'ECP / Fort Road',
     speedKmh: 72,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 530,480 L 590,490 L 640,470',
+    colorHex: '#0f9d58',
+    coordinates: [
+      [1.272, 103.835],
+      [1.275, 103.858],
+      [1.295, 103.875]
+    ],
     travelTimeMin: 5,
     typicalTimeMin: 5,
     incidentsCount: 0,
@@ -205,8 +272,13 @@ export const EXPRESSWAY_SEGMENTS: ExpresswayTrafficSegment[] = [
     toLocation: 'PIE Jurong West',
     speedKmh: 84,
     flowLevel: 'smooth',
-    colorHex: '#10b981', // Green
-    svgPath: 'M 360,200 L 260,220 L 200,280',
+    colorHex: '#0f9d58',
+    coordinates: [
+      [1.385, 103.765],
+      [1.378, 103.735],
+      [1.365, 103.712],
+      [1.352, 103.695]
+    ],
     travelTimeMin: 7,
     typicalTimeMin: 7,
     incidentsCount: 0,
@@ -221,15 +293,17 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     expressway: 'PIE',
     location: 'PIE after Adam Rd',
     description: 'Accident on PIE (towards Changi Airport) after Adam Rd. Avoid lane 1 and 2. Heavy traffic expected.',
-    timestamp: '2023-10-14T10:42:00',
-    timeFormatted: '10:42 AM',
+    timestamp: '2026-08-19T14:42:00',
+    timeFormatted: '14:42 SGT',
     severity: 'critical',
     tags: ['PIE', 'LANE 1, 2 CLOSED'],
+    lat: 1.3325,
+    lng: 103.8185,
     latPercent: 30,
     lngPercent: 45,
     laneClosure: 'Lanes 1 & 2 closed',
     estClearance: '35 mins',
-    trafficCamUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=400&q=80',
+    trafficCamUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80',
     speedKmh: 18,
   },
   {
@@ -239,15 +313,17 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     expressway: 'AYE',
     location: 'AYE at Clementi Ave 6 Exit',
     description: 'Roadworks on AYE (towards Tuas) at Clementi Ave 6 Exit. Lane 3 closed.',
-    timestamp: '2023-10-14T09:15:00',
-    timeFormatted: '09:15 AM',
+    timestamp: '2026-08-19T13:15:00',
+    timeFormatted: '13:15 SGT',
     severity: 'moderate',
     tags: ['AYE', 'LANE 3 CLOSED'],
+    lat: 1.3125,
+    lng: 103.7580,
     latPercent: 54,
     lngPercent: 52,
     laneClosure: 'Lane 3 closed',
     estClearance: '1 hr 20 mins',
-    trafficCamUrl: 'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=400&q=80',
+    trafficCamUrl: 'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=600&q=80',
     speedKmh: 35,
   },
   {
@@ -257,15 +333,17 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     expressway: 'CTE',
     location: 'CTE from Braddell Rd to Moulmein Rd Exit',
     description: 'Heavy traffic on CTE (towards City) from Braddell Rd to Moulmein Rd Exit.',
-    timestamp: '2023-10-14T10:30:00',
-    timeFormatted: '10:30 AM',
+    timestamp: '2026-08-19T14:30:00',
+    timeFormatted: '14:30 SGT',
     severity: 'minor',
     tags: ['CTE', 'SLOW TRAFFIC'],
+    lat: 1.3280,
+    lng: 103.8540,
     latPercent: 42,
     lngPercent: 54,
     laneClosure: 'All lanes open',
     estClearance: '20 mins',
-    trafficCamUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=400&q=80',
+    trafficCamUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80',
     speedKmh: 24,
   },
   {
@@ -275,10 +353,12 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     expressway: 'KPE',
     location: 'KPE tunnel before Airport Rd Exit',
     description: 'Vehicle breakdown on KPE (towards TPE) before Airport Rd Exit. Right shoulder blocked.',
-    timestamp: '2023-10-14T10:20:00',
-    timeFormatted: '10:20 AM',
+    timestamp: '2026-08-19T14:20:00',
+    timeFormatted: '14:20 SGT',
     severity: 'moderate',
     tags: ['KPE', 'SHOULDER BLOCKED'],
+    lat: 1.3450,
+    lng: 103.8900,
     latPercent: 36,
     lngPercent: 62,
     laneClosure: 'Right shoulder obstructed',
@@ -292,10 +372,12 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     expressway: 'BKE',
     location: 'BKE after Mandai Rd Exit',
     description: 'Minor collision on BKE (towards Woodlands Checkpoint) after Mandai Rd. Center lane affected.',
-    timestamp: '2023-10-14T10:12:00',
-    timeFormatted: '10:12 AM',
+    timestamp: '2026-08-19T14:12:00',
+    timeFormatted: '14:12 SGT',
     severity: 'moderate',
     tags: ['BKE', 'LANE 2 BLOCKED'],
+    lat: 1.4120,
+    lng: 103.7720,
     latPercent: 22,
     lngPercent: 40,
     laneClosure: 'Lane 2 blocked',
@@ -309,10 +391,12 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     expressway: 'ECP',
     location: 'ECP before Tanjong Rhu flyover',
     description: 'Slow moving traffic on ECP eastbound approaching Fort Road exit due to high vehicle volume.',
-    timestamp: '2023-10-14T09:55:00',
-    timeFormatted: '09:55 AM',
+    timestamp: '2026-08-19T13:55:00',
+    timeFormatted: '13:55 SGT',
     severity: 'minor',
     tags: ['ECP', 'VOLUME SLOW'],
+    lat: 1.2980,
+    lng: 103.8820,
     latPercent: 64,
     lngPercent: 64,
     laneClosure: 'All lanes open',
@@ -649,34 +733,68 @@ export const SERVICE_ADVISORIES: ServiceAdvisory[] = [
 export const TRAFFIC_CAMERAS: TrafficCamera[] = [
   {
     id: 'cam-pie-adam',
+    cameraId: '1701',
     name: 'PIE - Adam Flyover',
     expressway: 'PIE',
-    imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=500&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80',
+    lat: 1.3325,
+    lng: 103.8185,
     latPercent: 32,
     lngPercent: 47
   },
   {
     id: 'cam-cte-braddell',
+    cameraId: '2702',
     name: 'CTE - Braddell Flyover',
     expressway: 'CTE',
-    imageUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=500&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80',
+    lat: 1.3420,
+    lng: 103.8600,
     latPercent: 39,
     lngPercent: 55
   },
   {
     id: 'cam-aye-clementi',
+    cameraId: '4703',
     name: 'AYE - Clementi Ave 6',
     expressway: 'AYE',
-    imageUrl: 'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=500&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=600&q=80',
+    lat: 1.3125,
+    lng: 103.7580,
     latPercent: 52,
     lngPercent: 50
   },
   {
     id: 'cam-bke-woodlands',
+    cameraId: '5704',
     name: 'BKE - Mandai Road',
     expressway: 'BKE',
-    imageUrl: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=500&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=600&q=80',
+    lat: 1.4120,
+    lng: 103.7720,
     latPercent: 24,
     lngPercent: 42
+  },
+  {
+    id: 'cam-kpe-airport',
+    cameraId: '6705',
+    name: 'KPE - Airport Road Exit',
+    expressway: 'KPE',
+    imageUrl: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80',
+    lat: 1.3450,
+    lng: 103.8900,
+    latPercent: 36,
+    lngPercent: 62
+  },
+  {
+    id: 'cam-ecp-fort',
+    cameraId: '7706',
+    name: 'ECP - Fort Road Flyover',
+    expressway: 'ECP',
+    imageUrl: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=600&q=80',
+    lat: 1.2980,
+    lng: 103.8820,
+    latPercent: 64,
+    lngPercent: 64
   }
 ];

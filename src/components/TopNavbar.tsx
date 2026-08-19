@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Search,
   Clock,
@@ -9,8 +9,10 @@ import {
   Database,
   Radio,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react';
+import { useLanguage, LANGUAGES, LanguageCode } from '../i18n/LanguageContext';
 
 interface TopNavbarProps {
   searchQuery: string;
@@ -35,8 +37,11 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   lastRefreshedTime,
   apiStatus = 'live',
 }) => {
+  const { t, language, setLanguage, currentLanguageOption } = useLanguage();
   const [sgtTime, setSgtTime] = useState<string>('');
   const [secondsUntilNextRefresh, setSecondsUntilNextRefresh] = useState<number>(60);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -61,6 +66,17 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
       setSecondsUntilNextRefresh((prev) => (prev <= 1 ? 60 : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Close language dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleManualRefresh = () => {
@@ -93,14 +109,14 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-[17px] md:text-[19px] font-black tracking-tight text-[#004481] leading-none">
-                TransportMonitor SG
+                {t('appTitle')}
               </h1>
               <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#004481]/10 text-[#004481] tracking-wide uppercase border border-[#004481]/20">
                 Official
               </span>
             </div>
             <p className="text-[10px] text-[#727783] hidden sm:block leading-tight font-medium mt-0.5">
-              Source: <span className="text-[#004481] font-semibold">LTA DataMall v2</span> • Land Transport Authority
+              {t('dataSourceLta')} • Land Transport Authority
             </p>
           </div>
         </div>
@@ -113,7 +129,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           <input
             id="global-search-input"
             type="text"
-            placeholder="Search expressways (PIE, AYE, CTE), roads, or MRT lines..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-9 pr-4 py-1.5 bg-[#f3f4f5] border border-[#c1c6d3] rounded-lg text-[13px] text-[#191c1d] placeholder-[#727783] focus:outline-none focus:ring-2 focus:ring-[#004481] focus:bg-white transition-all shadow-2xs"
@@ -121,7 +137,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           {searchQuery && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[#727783] hover:text-[#191c1d] font-bold"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[#727783] hover:text-[#191c1d] font-bold cursor-pointer"
             >
               ✕
             </button>
@@ -129,13 +145,61 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
         </div>
       </div>
 
-      {/* Right Controls: Real-Time API Status, Refresh Button, SGT Clock */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Real-time API Connection Status Pill */}
+      {/* Right Controls: Language Selector, API Status, Refresh Button, SGT Clock */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* 1. Language Selector Dropdown (English, Chinese, Malay, Japanese, Korean, Tamil) */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            id="language-selector-btn"
+            onClick={() => setIsLangDropdownOpen((prev) => !prev)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#c1c6d3] hover:border-[#004481] bg-[#f8f9fa] hover:bg-white text-[12px] font-semibold text-[#191c1d] transition-all cursor-pointer shadow-2xs"
+            title={t('language')}
+          >
+            <Globe className="w-3.5 h-3.5 text-[#004481]" />
+            <span className="hidden sm:inline">{currentLanguageOption.nativeName}</span>
+            <span className="sm:hidden uppercase">{currentLanguageOption.code}</span>
+            <ChevronDown className="w-3 h-3 text-[#727783]" />
+          </button>
+
+          {isLangDropdownOpen && (
+            <div
+              id="language-dropdown-menu"
+              className="absolute right-0 mt-1.5 w-48 bg-white border border-[#c1c6d3] rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#727783] border-b border-[#edeeef]">
+                {t('language')} / Select Language
+              </div>
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    setLanguage(lang.code);
+                    setIsLangDropdownOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-[12px] flex items-center justify-between transition-colors cursor-pointer ${
+                    language === lang.code
+                      ? 'bg-[#d5e3ff]/40 text-[#004481] font-bold'
+                      : 'text-[#191c1d] hover:bg-[#f3f4f5]'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>{lang.flag}</span>
+                    <span>{lang.nativeName}</span>
+                  </span>
+                  {language === lang.code && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#004481]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 2. Real-time API Connection Status Pill */}
         <button
           id="api-connection-status-btn"
           onClick={onOpenDataMallModal}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#c1c6d3] hover:border-[#004481] bg-[#f8f9fa] hover:bg-white text-[12px] font-medium text-[#191c1d] transition-all cursor-pointer shadow-2xs group"
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#c1c6d3] hover:border-[#004481] bg-[#f8f9fa] hover:bg-white text-[12px] font-medium text-[#191c1d] transition-all cursor-pointer shadow-2xs group"
           title="Click to view full LTA DataMall service health"
         >
           <span className="relative flex h-2 w-2">
@@ -162,11 +226,11 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             API:
           </span>
           <span className="font-bold text-[11px] sm:text-[12px] text-emerald-700">
-            {apiStatus === 'syncing' ? 'SYNCING' : 'LIVE (24ms)'}
+            {apiStatus === 'syncing' ? 'SYNC' : 'LIVE (24ms)'}
           </span>
         </button>
 
-        {/* Live Refresh Now Button */}
+        {/* 3. Live Refresh Now Button */}
         <button
           id="refresh-data-now-btn"
           onClick={handleManualRefresh}
@@ -181,13 +245,13 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
               isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'
             }`}
           />
-          <span className="hidden sm:inline">Refresh Data</span>
+          <span className="hidden sm:inline">{t('refreshData')}</span>
           <span className="text-[10px] opacity-75 font-normal hidden lg:inline">
             ({secondsUntilNextRefresh}s)
           </span>
         </button>
 
-        {/* Singapore Standard Time Master Clock */}
+        {/* 4. Singapore Standard Time Master Clock */}
         <button
           id="sgt-clock-btn"
           onClick={onOpenClockModal}

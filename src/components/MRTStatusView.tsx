@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MRTLineStatus, ServiceAdvisory } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface MRTStatusViewProps {
   lines: MRTLineStatus[];
@@ -14,6 +15,7 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
   onOpenNetworkMap,
   onSelectLineDetails,
 }) => {
+  const { t } = useLanguage();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('14 OCT 2023, 14:32 SGT');
   const [selectedAdvisoryLine, setSelectedAdvisoryLine] = useState<string>('ALL');
@@ -44,19 +46,19 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
       : advisories.filter((a) => a.lineCode === selectedAdvisoryLine);
 
   return (
-    <div className="flex-1 md:ml-72 flex flex-col bg-[#f8f9fa] min-h-[calc(100vh-64px)] pb-24 md:pb-28">
+    <div className="flex-1 md:mr-72 flex flex-col bg-[#f8f9fa] min-h-[calc(100vh-64px)] pb-24 md:pb-28">
       {/* Main Canvas Area */}
       <div className="p-6 md:p-8 max-w-7xl w-full mx-auto">
         {/* Header Section matching mockup */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
             <h2 className="text-[24px] md:text-[32px] font-bold text-[#191c1d] tracking-tight mb-2">
-              Network Status
+              {t('networkStatusTitle')}
             </h2>
             <div className="flex items-center gap-2 text-[#414751]">
               <span className="w-2.5 h-2.5 rounded-full bg-[#ba1a1a] pulse-dot inline-block shrink-0" />
               <span className="text-[12px] font-semibold tracking-wider uppercase font-mono">
-                LIVE UPDATE: {lastUpdated}
+                {t('liveUpdate')}: {lastUpdated}
               </span>
             </div>
           </div>
@@ -66,10 +68,10 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
             <button
               id="btn-network-map-modal"
               onClick={onOpenNetworkMap}
-              className="flex items-center gap-2 px-4 py-2 bg-[#e7e8e9] hover:bg-[#e1e3e4] border border-[#c1c6d3] rounded-lg transition-colors text-[14px] font-medium font-mono text-[#191c1d] cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-[#e7e8e9] hover:bg-[#e1e3e4] border border-[#c1c6d3] rounded-lg transition-colors text-[14px] font-medium font-mono text-[#191c1d] cursor-pointer shadow-2xs"
             >
               <span className="material-symbols-outlined text-[18px]">map</span>
-              <span>Network Map</span>
+              <span>{t('networkMap')}</span>
             </button>
 
             {/* Refresh Button */}
@@ -85,7 +87,7 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
               >
                 refresh
               </span>
-              <span>{isRefreshing ? 'Updating...' : 'Refresh'}</span>
+              <span>{isRefreshing ? t('updating') : t('refreshData')}</span>
             </button>
           </div>
         </div>
@@ -146,12 +148,12 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
                         {line.statusTitle}
                       </p>
                       <p className="text-[14px] text-[#414751] mt-1 font-normal line-clamp-1">
-                        {line.statusMessage || 'Service delayed'}
+                        {line.statusMessage || t('serviceDelay')}
                       </p>
                     </>
                   ) : (
                     <p className="text-[16px] font-normal text-[#414751]">
-                      {line.statusTitle}
+                      {t('normalService')}
                     </p>
                   )}
                 </div>
@@ -167,7 +169,7 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#c1c6d3] pb-4 mb-4 gap-2">
             <h3 className="text-[20px] font-semibold text-[#191c1d] tracking-tight">
-              Recent Service Advisories
+              {t('recentAdvisories')}
             </h3>
             {/* Optional Line Filter */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
@@ -229,13 +231,13 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
 
                   {advisory.affectedStations && (
                     <div className="mt-2 text-[12px] text-[#004481] bg-[#d5e3ff]/30 px-2.5 py-1 rounded inline-block">
-                      <strong>Sector:</strong> {advisory.affectedStations}
+                      <strong>{t('sector')}:</strong> {advisory.affectedStations}
                     </div>
                   )}
 
                   {advisory.alternativeTransport && (
                     <div className="mt-1.5 text-[12px] text-[#5a3e00] bg-[#ffdeaa]/30 px-2.5 py-1 rounded">
-                      <strong>Bridging Bus:</strong> {advisory.alternativeTransport}
+                      <strong>{t('bridgingBus')}:</strong> {advisory.alternativeTransport}
                     </div>
                   )}
                 </div>
