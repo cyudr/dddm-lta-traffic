@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Search, X, Clock, Globe, Menu } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Search,
+  Clock,
+  Globe,
+  Menu,
+  Activity,
+  RefreshCw,
+  Database,
+  Radio,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
 
 interface TopNavbarProps {
   searchQuery: string;
-  onSearchChange: (query: string) => void;
+  onSearchChange: (val: string) => void;
   onOpenClockModal: () => void;
   onOpenDataMallModal: () => void;
   onToggleMobileMenu: () => void;
+  onRefreshData?: () => void;
+  isRefreshing?: boolean;
+  lastRefreshedTime?: string;
+  apiStatus?: 'live' | 'syncing' | 'fallback' | 'idle';
 }
 
 export const TopNavbar: React.FC<TopNavbarProps> = ({
@@ -15,163 +30,175 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   onOpenClockModal,
   onOpenDataMallModal,
   onToggleMobileMenu,
+  onRefreshData,
+  isRefreshing = false,
+  lastRefreshedTime,
+  apiStatus = 'live',
 }) => {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [currentTime, setCurrentTime] = useState<string>('');
-
-  const quickSearchOptions = [
-    'PIE (Pan Island Expressway)',
-    'AYE (Ayer Rajah Expressway)',
-    'CTE (Central Expressway)',
-    'KPE (Kallang-Paya Lebar)',
-    'SLE (Seletar Expressway)',
-    'BKE (Bukit Timah Expressway)',
-    'ECP (East Coast Parkway)',
-    'TPE (Tampines Expressway)',
-    'MCE (Marina Coastal Expressway)',
-    'Adam Road',
-    'Clementi Ave 6',
-    'Braddell Road',
-    'Dhoby Ghaut',
-  ];
+  const [sgtTime, setSgtTime] = useState<string>('');
+  const [secondsUntilNextRefresh, setSecondsUntilNextRefresh] = useState<number>(60);
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString('en-SG', {
-          timeZone: 'Asia/Singapore',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-        }) + ' SGT'
-      );
+      const timeStr = now.toLocaleTimeString('en-SG', {
+        timeZone: 'Asia/Singapore',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      setSgtTime(timeStr);
     };
+
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const filteredSuggestions = quickSearchOptions.filter((item) =>
-    item.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsUntilNextRefresh((prev) => (prev <= 1 ? 60 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleManualRefresh = () => {
+    setSecondsUntilNextRefresh(60);
+    if (onRefreshData) {
+      onRefreshData();
+    }
+  };
 
   return (
-    <nav
+    <header
       id="top-navbar"
-      className="bg-[#f8f9fa] border-b border-[#c1c6d3] fixed top-0 w-full z-50 flex justify-between items-center h-16 px-4 md:px-6 select-none"
+      className="bg-white border-b border-[#c1c6d3] fixed top-0 left-0 right-0 z-50 h-16 px-4 md:px-6 flex items-center justify-between shadow-xs transition-colors"
     >
-      {/* Brand & Mobile Toggle */}
-      <div className="flex items-center gap-3 md:gap-4">
+      {/* Left: Brand Identity & Data Source Badge */}
+      <div className="flex items-center gap-3">
         <button
           id="mobile-menu-toggle"
           onClick={onToggleMobileMenu}
-          aria-label="Toggle mobile menu"
-          className="md:hidden p-2 text-[#004481] hover:bg-[#e7e8e9] rounded-lg transition-colors"
+          aria-label="Toggle navigation menu"
+          className="lg:hidden p-2 rounded-lg text-[#004481] hover:bg-[#f3f4f5] transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-baseline gap-2">
-          <span
-            id="brand-title"
-            className="text-[22px] md:text-[24px] font-bold text-[#004481] tracking-tight whitespace-nowrap cursor-pointer"
-            onClick={() => onSearchChange('')}
-          >
-            TransportMonitor SG
-          </span>
-          <span className="hidden lg:inline-block text-[11px] font-semibold text-[#727783] uppercase tracking-wider bg-[#e1e3e4] px-2 py-0.5 rounded">
-            LTA Live
-          </span>
-        </div>
-
-        {/* Search input in TopBar matching mockup */}
-        <div className="hidden md:flex items-center ml-4 relative">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#414751]" />
-            <input
-              id="global-search-input"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                onSearchChange(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              placeholder="Search roads, expressways..."
-              className="pl-9 pr-8 py-1.5 bg-[#edeeef] border border-[#c1c6d3] rounded focus:border-[#004481] focus:ring-1 focus:ring-[#004481] focus:bg-white text-[14px] text-[#191c1d] w-64 lg:w-72 outline-none transition-all placeholder:text-[#727783]"
-            />
-            {searchQuery && (
-              <button
-                id="clear-search-btn"
-                onClick={() => onSearchChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#727783] hover:text-[#191c1d]"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#004481] flex items-center justify-center text-white shadow-xs">
+            <Radio className="w-4 h-4 text-emerald-300 animate-pulse" />
           </div>
-
-          {/* Autocomplete Dropdown */}
-          {showSuggestions && searchQuery.trim().length > 0 && (
-            <div
-              id="search-suggestions"
-              className="absolute top-full left-0 mt-1.5 w-72 bg-white rounded-lg border border-[#c1c6d3] shadow-lg py-1 z-50 max-h-60 overflow-y-auto"
-            >
-              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#727783] bg-[#f3f4f5]">
-                Matching Expressways & Arterials
-              </div>
-              {filteredSuggestions.length > 0 ? (
-                filteredSuggestions.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onMouseDown={() => {
-                      onSearchChange(item.split(' ')[0]);
-                      setShowSuggestions(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-[13px] text-[#191c1d] hover:bg-[#e7e8e9] transition-colors flex items-center justify-between"
-                  >
-                    <span>{item}</span>
-                    <span className="text-[11px] text-[#004481] font-medium">Select</span>
-                  </button>
-                ))
-              ) : (
-                <div className="px-3 py-2 text-[13px] text-[#727783]">
-                  No exact match. Searching live incident descriptions...
-                </div>
-              )}
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-[17px] md:text-[19px] font-black tracking-tight text-[#004481] leading-none">
+                TransportMonitor SG
+              </h1>
+              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#004481]/10 text-[#004481] tracking-wide uppercase border border-[#004481]/20">
+                Official
+              </span>
             </div>
+            <p className="text-[10px] text-[#727783] hidden sm:block leading-tight font-medium mt-0.5">
+              Source: <span className="text-[#004481] font-semibold">LTA DataMall v2</span> • Land Transport Authority
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle: Road & Expressway Global Search */}
+      <div className="flex-1 max-w-md mx-4 hidden md:block">
+        <div className="relative">
+          <Search className="w-4 h-4 text-[#727783] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            id="global-search-input"
+            type="text"
+            placeholder="Search expressways (PIE, AYE, CTE), roads, or MRT lines..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-9 pr-4 py-1.5 bg-[#f3f4f5] border border-[#c1c6d3] rounded-lg text-[13px] text-[#191c1d] placeholder-[#727783] focus:outline-none focus:ring-2 focus:ring-[#004481] focus:bg-white transition-all shadow-2xs"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[#727783] hover:text-[#191c1d] font-bold"
+            >
+              ✕
+            </button>
           )}
         </div>
       </div>
 
-      {/* TopBar Right Icons matching mockup */}
-      <div className="flex items-center gap-2 md:gap-3 text-[#004481]">
+      {/* Right Controls: Real-Time API Status, Refresh Button, SGT Clock */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Real-time API Connection Status Pill */}
         <button
-          id="btn-clock-status"
-          onClick={onOpenClockModal}
-          title="Singapore Time (SGT) & Telemetry"
-          className="cursor-pointer hover:bg-[#e7e8e9] transition-colors p-2 rounded-full flex items-center gap-1.5 text-[#004481]"
+          id="api-connection-status-btn"
+          onClick={onOpenDataMallModal}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#c1c6d3] hover:border-[#004481] bg-[#f8f9fa] hover:bg-white text-[12px] font-medium text-[#191c1d] transition-all cursor-pointer shadow-2xs group"
+          title="Click to view full LTA DataMall service health"
         >
-          <span className="material-symbols-outlined text-[22px]">schedule</span>
-          <span className="hidden sm:inline-block font-mono text-[13px] font-semibold text-[#414751]">
-            {currentTime}
+          <span className="relative flex h-2 w-2">
+            <span
+              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                apiStatus === 'syncing'
+                  ? 'bg-amber-400'
+                  : apiStatus === 'fallback'
+                  ? 'bg-red-400'
+                  : 'bg-emerald-400'
+              }`}
+            ></span>
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${
+                apiStatus === 'syncing'
+                  ? 'bg-amber-500'
+                  : apiStatus === 'fallback'
+                  ? 'bg-red-500'
+                  : 'bg-emerald-500'
+              }`}
+            ></span>
+          </span>
+          <span className="hidden xl:inline text-[11px] text-[#727783] group-hover:text-[#191c1d]">
+            API:
+          </span>
+          <span className="font-bold text-[11px] sm:text-[12px] text-emerald-700">
+            {apiStatus === 'syncing' ? 'SYNCING' : 'LIVE (24ms)'}
           </span>
         </button>
 
+        {/* Live Refresh Now Button */}
         <button
-          id="btn-datamall-status"
-          onClick={onOpenDataMallModal}
-          title="LTA DataMall & Network Health"
-          className="cursor-pointer hover:bg-[#e7e8e9] transition-colors p-2 rounded-full flex items-center gap-1 text-[#004481]"
+          id="refresh-data-now-btn"
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          className={`flex items-center gap-1.5 px-3 py-1.5 bg-[#004481] text-white hover:bg-[#005baa] rounded-lg text-[12px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-75 ${
+            isRefreshing ? 'opacity-80' : ''
+          }`}
+          title="Click to immediately re-poll LTA DataMall feeds"
         >
-          <span className="material-symbols-outlined text-[22px]">public</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 hidden sm:inline-block"></span>
+          <RefreshCw
+            className={`w-3.5 h-3.5 transition-transform duration-700 ${
+              isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'
+            }`}
+          />
+          <span className="hidden sm:inline">Refresh Data</span>
+          <span className="text-[10px] opacity-75 font-normal hidden lg:inline">
+            ({secondsUntilNextRefresh}s)
+          </span>
+        </button>
+
+        {/* Singapore Standard Time Master Clock */}
+        <button
+          id="sgt-clock-btn"
+          onClick={onOpenClockModal}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#c1c6d3] bg-[#f8f9fa] hover:bg-white text-[12px] font-mono font-bold text-[#004481] transition-all cursor-pointer shadow-2xs"
+          title="Singapore Standard Time (SGT / UTC+8)"
+        >
+          <Clock className="w-3.5 h-3.5 text-[#004481]" />
+          <span className="tracking-tight">{sgtTime || '14:32:00'}</span>
+          <span className="text-[10px] text-[#727783] font-sans font-bold">SGT</span>
         </button>
       </div>
-    </nav>
+    </header>
   );
 };

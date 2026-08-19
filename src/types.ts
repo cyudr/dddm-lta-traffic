@@ -2,6 +2,24 @@ export type ViewMode = 'traffic' | 'mrt';
 
 export type IncidentType = 'accident' | 'roadworks' | 'congestion' | 'breakdown' | 'heavy_rain';
 
+export type TrafficFlowLevel = 'smooth' | 'moderate' | 'slow' | 'congested';
+
+export interface ExpresswayTrafficSegment {
+  id: string;
+  name: string;
+  code: string; // 'PIE', 'AYE', 'CTE', 'KPE', 'SLE', 'BKE', 'ECP', 'TPE', 'MCE', 'KJE'
+  direction: string; // 'Eastbound', 'Westbound', 'Northbound', 'Southbound'
+  fromLocation: string;
+  toLocation: string;
+  speedKmh: number;
+  flowLevel: TrafficFlowLevel;
+  colorHex: string;
+  svgPath: string; // SVG path coordinate string relative to map viewBox (1000x650)
+  travelTimeMin: number;
+  typicalTimeMin: number;
+  incidentsCount: number;
+}
+
 export interface TrafficIncident {
   id: string;
   type: IncidentType;

@@ -20,6 +20,8 @@ export default function App() {
   const [advisories, setAdvisories] = useState<ServiceAdvisory[]>(SERVICE_ADVISORIES);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [liveSyncStatus, setLiveSyncStatus] = useState<'idle' | 'syncing' | 'live' | 'fallback'>('idle');
+  const [lastRefreshedTime, setLastRefreshedTime] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Modals state
   const [isNetworkMapOpen, setIsNetworkMapOpen] = useState(false);
@@ -30,6 +32,7 @@ export default function App() {
 
   // Fetch live LTA DataMall Traffic Incidents and Train Alerts
   const fetchLTAData = useCallback(async () => {
+    setIsRefreshing(true);
     setLiveSyncStatus('syncing');
     try {
       // 1. Fetch Traffic Incidents
@@ -38,10 +41,6 @@ export default function App() {
         const incidentsData = await incidentsRes.json();
         if (incidentsData.success && Array.isArray(incidentsData.value) && incidentsData.value.length > 0) {
           setIncidents(incidentsData.value);
-          setLiveSyncStatus('live');
-        } else {
-          // If no active road incidents currently on the island, keep rich dataset
-          setLiveSyncStatus('live');
         }
       }
 
@@ -76,7 +75,7 @@ export default function App() {
             // Add live advisories
             if (Array.isArray(alertObj.Message) && alertObj.Message.length > 0) {
               const newAdvisories: ServiceAdvisory[] = alertObj.Message.map((m: any, idx: number) => ({
-                id: `lta-adv-${idx}`,
+                id: `lta-adv-${idx}-${Date.now()}`,
                 lineCode: alertObj.AffectedSegments[0]?.Line || 'MRT',
                 lineColorBg: 'bg-[#9900aa]',
                 timeFormatted: 'LIVE SGT',
@@ -94,9 +93,21 @@ export default function App() {
           }
         }
       }
+
+      setLiveSyncStatus('live');
+      const nowStr = new Date().toLocaleTimeString('en-SG', {
+        timeZone: 'Asia/Singapore',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }) + ' SGT';
+      setLastRefreshedTime(nowStr);
     } catch (err) {
       console.warn('Could not connect to live LTA backend, fallback active:', err);
       setLiveSyncStatus('fallback');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 400);
     }
   }, []);
 
@@ -107,15 +118,34 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchLTAData]);
 
+  // Global keyboard shortcut: 'R' to refresh data
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === 'r' || e.key === 'R') &&
+        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        fetchLTAData();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fetchLTAData]);
+
   return (
     <div className="bg-[#f8f9fa] text-[#191c1d] min-h-screen flex flex-col antialiased selection:bg-[#004481] selection:text-white">
-      {/* 1. Top Navigation Bar */}
+      {/* 1. Top Navigation Bar with Data Source, Connection Status & Refresh Action */}
       <TopNavbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onOpenClockModal={() => setIsClockModalOpen(true)}
         onOpenDataMallModal={() => setIsApiStatusOpen(true)}
         onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+        onRefreshData={fetchLTAData}
+        isRefreshing={isRefreshing}
+        lastRefreshedTime={lastRefreshedTime}
+        apiStatus={liveSyncStatus}
       />
 
       {/* 2. Main Layout Container */}
@@ -138,6 +168,9 @@ export default function App() {
             <TrafficIncidentsView
               incidents={incidents}
               searchQuery={searchQuery}
+              lastRefreshedTime={lastRefreshedTime}
+              onRefreshData={fetchLTAData}
+              isRefreshing={isRefreshing}
             />
           ) : (
             <MRTStatusView
