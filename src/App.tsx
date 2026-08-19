@@ -5,6 +5,7 @@ import { TopNavbar } from './components/TopNavbar';
 import { Sidebar } from './components/Sidebar';
 import { TrafficIncidentsView } from './components/TrafficIncidentsView';
 import { MRTStatusView } from './components/MRTStatusView';
+import { HistoricalTrendsView } from './components/HistoricalTrendsView';
 import { NetworkMapModal } from './components/NetworkMapModal';
 import { LineDetailsModal } from './components/LineDetailsModal';
 import { ApiStatusModal } from './components/ApiStatusModal';
@@ -71,7 +72,6 @@ function TransportApp() {
         const alertsData = await alertsRes.json();
         if (alertsData.success && alertsData.value) {
           const alertObj = alertsData.value;
-          // If Status === 2, there is an active train disruption
           if (alertObj.Status === 2 && Array.isArray(alertObj.AffectedSegments) && alertObj.AffectedSegments.length > 0) {
             const affectedLineCodes = alertObj.AffectedSegments.map((s: any) => s.Line);
 
@@ -93,7 +93,6 @@ function TransportApp() {
               })
             );
 
-            // Add live advisories
             if (Array.isArray(alertObj.Message) && alertObj.Message.length > 0) {
               const newAdvisories: ServiceAdvisory[] = alertObj.Message.map((m: any, idx: number) => ({
                 id: `lta-adv-${idx}-${Date.now()}`,
@@ -125,27 +124,29 @@ function TransportApp() {
           hour12: false,
         }) + ' SGT';
       setLastRefreshedTime(nowStr);
-    } catch (err) {
-      console.warn('Could not connect to live LTA backend, fallback active:', err);
+    } catch (error) {
+      console.error('Error fetching live LTA DataMall data:', error);
       setLiveSyncStatus('fallback');
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   }, []);
 
+  // Poll LTA DataMall periodically
   useEffect(() => {
     fetchLTAData();
-    // Re-fetch every 60 seconds
-    const interval = setInterval(fetchLTAData, 60000);
+    const interval = setInterval(() => {
+      fetchLTAData();
+    }, 60000);
     return () => clearInterval(interval);
   }, [fetchLTAData]);
 
-  // Global keyboard shortcut: 'R' to refresh data
+  // Keyboard shortcut: Press 'R' to refresh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         (e.key === 'r' || e.key === 'R') &&
-        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)
       ) {
         e.preventDefault();
         fetchLTAData();
@@ -157,7 +158,7 @@ function TransportApp() {
 
   return (
     <div className="bg-[#f8f9fa] text-[#191c1d] min-h-screen flex flex-col antialiased selection:bg-[#004481] selection:text-white">
-      {/* 1. Top Navigation Bar with Data Source, Connection Status & Refresh Action */}
+      {/* 1. Top Navigation Bar */}
       <TopNavbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -184,7 +185,7 @@ function TransportApp() {
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
-        {/* Dynamic View Mode: Traffic Incidents (Screen 1) or MRT Status (Screen 2) */}
+        {/* Dynamic View Mode: Traffic Incidents, MRT Status, or Historical Trends */}
         <main className="flex-1 flex flex-col w-full">
           {currentView === 'traffic' ? (
             <TrafficIncidentsView
@@ -193,14 +194,17 @@ function TransportApp() {
               lastRefreshedTime={lastRefreshedTime}
               onRefreshData={fetchLTAData}
               isRefreshing={isRefreshing}
+              onNavigateToTrends={() => setCurrentView('trends')}
             />
-          ) : (
+          ) : currentView === 'mrt' ? (
             <MRTStatusView
               lines={lines}
               advisories={advisories}
               onOpenNetworkMap={() => setIsNetworkMapOpen(true)}
               onSelectLineDetails={(line) => setSelectedLineForModal(line)}
             />
+          ) : (
+            <HistoricalTrendsView />
           )}
         </main>
       </div>

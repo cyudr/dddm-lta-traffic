@@ -1,6 +1,7 @@
 import React from 'react';
 import { ViewMode } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { AlertTriangle, Train, TrendingUp } from 'lucide-react';
 
 interface SidebarProps {
   currentView: ViewMode;
@@ -50,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Navigation Items */}
           <nav className="flex flex-col gap-1.5" aria-label="Main Navigation">
-            {/* Traffic Incidents Nav Button */}
+            {/* 1. Traffic Incidents Nav Button */}
             <button
               id="nav-btn-traffic-incidents"
               onClick={() => {
@@ -64,15 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <div className="flex items-center gap-3">
-                <span
-                  className="material-symbols-outlined text-[20px]"
-                  style={{
-                    fontVariationSettings:
-                      currentView === 'traffic' ? "'FILL' 1" : "'FILL' 0",
-                  }}
-                >
-                  warning
-                </span>
+                <AlertTriangle className="w-5 h-5 shrink-0" />
                 <span className="text-[14px]">{t('trafficIncidents')}</span>
               </div>
               {incidentCount > 0 && (
@@ -88,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
 
-            {/* MRT/LRT Status Nav Button */}
+            {/* 2. MRT/LRT Status Nav Button */}
             <button
               id="nav-btn-mrt-status"
               onClick={() => {
@@ -102,15 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <div className="flex items-center gap-3">
-                <span
-                  className="material-symbols-outlined text-[20px]"
-                  style={{
-                    fontVariationSettings:
-                      currentView === 'mrt' ? "'FILL' 1" : "'FILL' 0",
-                  }}
-                >
-                  subway
-                </span>
+                <Train className="w-5 h-5 shrink-0" />
                 <span className="text-[14px]">{t('mrtStatus')}</span>
               </div>
               <span
@@ -123,6 +108,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 1 Alert
               </span>
             </button>
+
+            {/* 3. Historical Trends & Analytics Nav Button */}
+            <button
+              id="nav-btn-historical-trends"
+              onClick={() => {
+                onSelectView('trends');
+                onCloseMobile();
+              }}
+              className={`w-full text-left rounded-lg px-4 py-3 flex items-center justify-between transition-all duration-150 cursor-pointer ${
+                currentView === 'trends'
+                  ? 'bg-[#005baa] text-white shadow-sm font-bold'
+                  : 'text-[#414751] hover:bg-[#e1e3e4] font-medium'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <TrendingUp className="w-5 h-5 shrink-0" />
+                <span className="text-[14px]">Historical Trends</span>
+              </div>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                  currentView === 'trends'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-emerald-100 text-emerald-800'
+                }`}
+              >
+                Analytics
+              </span>
+            </button>
           </nav>
         </div>
 
@@ -130,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="pt-4 border-t border-[#c1c6d3]/60">
           <div
             id="sidebar-live-status-indicator"
-            className="flex items-center gap-2.5 mb-2 bg-[#ffffff] rounded p-3 border border-[#c1c6d3] shadow-xs"
+            className="flex items-center gap-2.5 mb-2 bg-[#ffffff] rounded-lg p-3 border border-[#c1c6d3] shadow-xs"
           >
             <div className="w-2.5 h-2.5 rounded-full bg-[#e51d24] pulse-dot shrink-0" />
             <span className="text-[12px] font-bold tracking-wider text-[#e51d24]">

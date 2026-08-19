@@ -24,7 +24,8 @@ import {
   AlertOctagon,
   RefreshCw,
   Eye,
-  Maximize2
+  Maximize2,
+  TrendingUp
 } from 'lucide-react';
 
 interface TrafficIncidentsViewProps {
@@ -34,6 +35,7 @@ interface TrafficIncidentsViewProps {
   lastRefreshedTime?: string;
   onRefreshData?: () => void;
   isRefreshing?: boolean;
+  onNavigateToTrends?: () => void;
 }
 
 type RightPanelTab = 'feed' | 'overview' | 'details' | 'cameras';
@@ -44,6 +46,7 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
   lastRefreshedTime,
   onRefreshData,
   isRefreshing = false,
+  onNavigateToTrends,
 }) => {
   const { t } = useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
@@ -145,6 +148,17 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
         {/* Right: Map Layers & Sliding Drawer Toggle */}
         <div className="flex items-center gap-2">
           {/* Map Layer Toggles */}
+          {onNavigateToTrends && (
+            <button
+              onClick={onNavigateToTrends}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#004481]/10 hover:bg-[#004481]/20 text-[#004481] text-[11px] font-bold border border-[#004481]/30 transition-colors cursor-pointer"
+              title="View 24h & 7-day Historical Traffic Trends"
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Historical Trends</span>
+            </button>
+          )}
+
           <div className="flex items-center gap-1 bg-[#f3f4f5] p-1 rounded-lg border border-[#c1c6d3] text-[11px]">
             <button
               onClick={() => setShowRoadFlow((prev) => !prev)}

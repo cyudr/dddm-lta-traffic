@@ -1,4 +1,4 @@
-export type ViewMode = 'traffic' | 'mrt';
+export type ViewMode = 'traffic' | 'mrt' | 'trends';
 
 export type IncidentType = 'accident' | 'roadworks' | 'congestion' | 'breakdown' | 'heavy_rain';
 
@@ -18,6 +18,7 @@ export interface ExpresswayTrafficSegment {
   travelTimeMin: number;
   typicalTimeMin: number;
   incidentsCount: number;
+  historicalDeltaPct?: number; // e.g. -8% vs 7-day average
 }
 
 export interface TrafficIncident {
@@ -59,6 +60,7 @@ export interface MRTLineStatus {
   firstTrain: string;
   lastTrain: string;
   stations?: { code: string; name: string; isInterchange?: boolean }[];
+  onTimeReliability?: number; // e.g. 99.8%
 }
 
 export interface ServiceAdvisory {
@@ -80,8 +82,66 @@ export interface TrafficCamera {
   name: string;
   expressway: string;
   imageUrl: string;
+  proxyImageUrl?: string;
   lat: number;
   lng: number;
   latPercent?: number;
   lngPercent?: number;
+  isOnline?: boolean;
+  status?: string;
+}
+
+// Historical Trends & Analytics Types
+export interface HourlyIncidentTrend {
+  hour: string; // '00:00', '02:00', etc.
+  accidents: number;
+  breakdowns: number;
+  roadworks: number;
+  congestion: number;
+  total: number;
+}
+
+export interface ExpresswaySpeedTrendPoint {
+  time: string; // '06:00', '07:30', etc.
+  PIE: number;
+  AYE: number;
+  CTE: number;
+  KPE: number;
+  ECP: number;
+  SLE: number;
+  avgSpeed: number;
+}
+
+export interface CorridorReliabilityMetric {
+  corridor: string;
+  currentTravelTimeMin: number;
+  baselineTravelTimeMin: number;
+  varianceMinutes: number;
+  status: 'On Time' | 'Moderate Delay' | 'Heavy Delay';
+  peakHourTrend: 'Improving' | 'Worsening' | 'Stable';
+  reliabilityScore: number; // percentage, e.g. 94%
+}
+
+export interface MRTReliabilityTrend {
+  line: string;
+  code: string;
+  mkbfKm: number; // Mean Kilometres Between Failures in thousands (e.g. 2100k km)
+  punctualityPct: number;
+  majorDelaysThisMonth: number;
+  morningPeakCrowdPct: number;
+  eveningPeakCrowdPct: number;
+}
+
+export interface HistoricalTrendsData {
+  timeframe: '24h' | '7d' | '30d';
+  lastHarvestTimestamp: string;
+  totalIncidentsRecorded: number;
+  avgNetworkSpeedKmh: number;
+  networkSpeedDeltaVsYesterdayPct: number;
+  peakHourCongestionIndex: number;
+  hourlyTrends: HourlyIncidentTrend[];
+  speedTimeline: ExpresswaySpeedTrendPoint[];
+  corridorReliability: CorridorReliabilityMetric[];
+  mrtReliability: MRTReliabilityTrend[];
+  topBottlenecks: { location: string; expressway: string; incidentFrequency: number; avgDelayMin: number }[];
 }
