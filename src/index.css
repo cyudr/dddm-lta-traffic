@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .pulse-dot {
+    animation: pulse-red 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .pulse-amber {
+    animation: pulse-amber 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .mrt-card {
+    border-left-width: 4px;
+  }
+  .map-marker {
+    transition: transform 0.2s ease, z-index 0.1s ease;
+  }
+  .map-marker:hover {
+    transform: scale(1.15) translateY(-2px);
+    z-index: 50;
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 29, 36, 0.7);
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(229, 29, 36, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 29, 36, 0);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-amber {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 184, 28, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 184, 28, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 184, 28, 0);
+  }
+}
+
+/* Custom scrollbar for dense control room displays */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f3f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c6d3;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #727783;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "TransportMonitor SG",
+  "description": "Singapore live traffic incidents and MRT/LRT network status monitoring console sourced from LTA DataMall",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
