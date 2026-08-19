@@ -41,15 +41,22 @@ const EXPRESSWAY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   KJE: { lat: 1.3780, lng: 103.7350 },
 };
 
+// Generic helper for LTA DataMall API requests
+async function fetchLTAEndpoint(endpoint: string, queryParams = '') {
+  const url = `https://datamall2.mytransport.sg/ltaodataservice/${endpoint}${queryParams}`;
+  const response = await fetch(url, {
+    headers: {
+      AccountKey: LTA_API_KEY,
+      accept: 'application/json',
+    },
+  });
+  return response;
+}
+
 // 1. Live Traffic Incidents Proxy
 app.get('/api/traffic-incidents', async (req, res) => {
   try {
-    const response = await fetch('https://datamall2.mytransport.sg/ltaodataservice/TrafficIncidents', {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('TrafficIncidents');
 
     if (!response.ok) {
       console.warn(`LTA DataMall TrafficIncidents responded with status ${response.status}`);
@@ -172,12 +179,7 @@ app.get('/api/traffic-incidents', async (req, res) => {
 // 2. Live Train Service Alerts Proxy
 app.get('/api/train-service-alerts', async (req, res) => {
   try {
-    const response = await fetch('https://datamall2.mytransport.sg/ltaodataservice/TrainServiceAlerts', {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('TrainServiceAlerts');
 
     if (!response.ok) {
       console.warn(`LTA DataMall TrainServiceAlerts responded with status ${response.status}`);
@@ -208,12 +210,7 @@ app.get('/api/train-service-alerts', async (req, res) => {
 // 3. Live Traffic Camera Images (LTA DataMall Traffic-Images API)
 app.get('/api/traffic-images', async (req, res) => {
   try {
-    const response = await fetch('https://datamall2.mytransport.sg/ltaodataservice/Traffic-Imagesv2', {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('Traffic-Imagesv2');
 
     let rawList: any[] = [];
     if (response.ok) {
@@ -221,9 +218,7 @@ app.get('/api/traffic-images', async (req, res) => {
       rawList = data.value || [];
     } else {
       // Try v1 fallback
-      const v1Res = await fetch('https://datamall2.mytransport.sg/ltaodataservice/Traffic-Images', {
-        headers: { AccountKey: LTA_API_KEY, accept: 'application/json' },
-      });
+      const v1Res = await fetchLTAEndpoint('Traffic-Images');
       if (v1Res.ok) {
         const data1 = await v1Res.json();
         rawList = data1.value || [];
@@ -248,18 +243,25 @@ app.get('/api/traffic-images', async (req, res) => {
         }
       }
 
+      // Check if image link is provided
+      const rawImageLink = cam.ImageLink || '';
+      const isOnline = !!rawImageLink && !rawImageLink.includes('offline');
+
       return {
         id: `cam-${cam.CameraID || idx}`,
         cameraId: cam.CameraID || `${idx + 1000}`,
         name: `Camera ${cam.CameraID || idx} - ${expressway}`,
         expressway,
-        imageUrl: cam.ImageLink,
+        imageUrl: rawImageLink,
+        proxyImageUrl: rawImageLink ? `/api/camera-image-proxy?url=${encodeURIComponent(rawImageLink)}` : '',
         lat,
         lng,
         latitude: lat,
         longitude: lng,
         latPercent,
         lngPercent,
+        isOnline,
+        status: isOnline ? 'online' : 'offline',
         timestamp: new Date().toISOString(),
       };
     });
@@ -276,15 +278,41 @@ app.get('/api/traffic-images', async (req, res) => {
   }
 });
 
-// 4. Estimated Travel Times on Expressways (LTA EstTravelTimes)
+// 4. Camera Image Binary Proxy (handles CORS, referrer, and token auth)
+app.get('/api/camera-image-proxy', async (req, res) => {
+  try {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) {
+      return res.status(400).send('Missing url parameter');
+    }
+
+    const imgResponse = await fetch(imageUrl, {
+      headers: {
+        AccountKey: LTA_API_KEY,
+        'User-Agent': 'Mozilla/5.0 TransportMonitorSG/1.0',
+      },
+    });
+
+    if (!imgResponse.ok) {
+      return res.status(imgResponse.status).send('Upstream image error');
+    }
+
+    const contentType = imgResponse.headers.get('content-type') || 'image/jpeg';
+    const buffer = await imgResponse.arrayBuffer();
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=15');
+    res.send(Buffer.from(buffer));
+  } catch (error: any) {
+    console.error('Error in camera proxy:', error.message);
+    res.status(502).send('Camera stream proxy failure');
+  }
+});
+
+// 5. Estimated Travel Times on Expressways (LTA EstTravelTimes)
 app.get('/api/est-travel-times', async (req, res) => {
   try {
-    const response = await fetch('https://datamall2.mytransport.sg/ltaodataservice/EstTravelTimes', {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('EstTravelTimes');
     if (response.ok) {
       const data = await response.json();
       return res.json({ success: true, value: data.value || [] });
@@ -295,15 +323,10 @@ app.get('/api/est-travel-times', async (req, res) => {
   }
 });
 
-// 5. Variable Message Signs (LTA VMS)
+// 6. Variable Message Signs (LTA VMS)
 app.get('/api/vms', async (req, res) => {
   try {
-    const response = await fetch('https://datamall2.mytransport.sg/ltaodataservice/VMS', {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('VMS');
     if (response.ok) {
       const data = await response.json();
       return res.json({ success: true, value: data.value || [] });
@@ -314,7 +337,63 @@ app.get('/api/vms', async (req, res) => {
   }
 });
 
-// 6. API Status & Health Check
+// 7. Live Traffic Speed Bands (LTA TrafficSpeedBandsv2)
+app.get('/api/traffic-speed-bands', async (req, res) => {
+  try {
+    const response = await fetchLTAEndpoint('TrafficSpeedBandsv2');
+    if (response.ok) {
+      const data = await response.json();
+      return res.json({ success: true, count: (data.value || []).length, value: data.value || [] });
+    }
+    res.json({ success: false, value: [] });
+  } catch (error: any) {
+    res.json({ success: false, error: error.message, value: [] });
+  }
+});
+
+// 8. Planned & Active Road Works (LTA RoadWorks)
+app.get('/api/road-works', async (req, res) => {
+  try {
+    const response = await fetchLTAEndpoint('RoadWorks');
+    if (response.ok) {
+      const data = await response.json();
+      return res.json({ success: true, value: data.value || [] });
+    }
+    res.json({ success: false, value: [] });
+  } catch (error: any) {
+    res.json({ success: false, error: error.message, value: [] });
+  }
+});
+
+// 9. Faulty Traffic Lights (LTA FaultyTrafficLights)
+app.get('/api/faulty-traffic-lights', async (req, res) => {
+  try {
+    const response = await fetchLTAEndpoint('FaultyTrafficLights');
+    if (response.ok) {
+      const data = await response.json();
+      return res.json({ success: true, value: data.value || [] });
+    }
+    res.json({ success: false, value: [] });
+  } catch (error: any) {
+    res.json({ success: false, error: error.message, value: [] });
+  }
+});
+
+// 10. Carpark Availability (LTA CarParkAvailabilityv2)
+app.get('/api/carpark-availability', async (req, res) => {
+  try {
+    const response = await fetchLTAEndpoint('CarParkAvailabilityv2');
+    if (response.ok) {
+      const data = await response.json();
+      return res.json({ success: true, value: data.value || [] });
+    }
+    res.json({ success: false, value: [] });
+  } catch (error: any) {
+    res.json({ success: false, error: error.message, value: [] });
+  }
+});
+
+// 11. API Status & Health Check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -323,9 +402,13 @@ app.get('/api/health', (req, res) => {
     services: [
       { name: 'TrafficIncidents', status: 'operational', endpoint: '/api/traffic-incidents' },
       { name: 'TrainServiceAlerts', status: 'operational', endpoint: '/api/train-service-alerts' },
-      { name: 'Traffic-Images', status: 'operational', endpoint: '/api/traffic-images' },
+      { name: 'Traffic-Imagesv2', status: 'operational', endpoint: '/api/traffic-images' },
+      { name: 'TrafficSpeedBandsv2', status: 'operational', endpoint: '/api/traffic-speed-bands' },
       { name: 'EstTravelTimes', status: 'operational', endpoint: '/api/est-travel-times' },
       { name: 'VMS', status: 'operational', endpoint: '/api/vms' },
+      { name: 'RoadWorks', status: 'operational', endpoint: '/api/road-works' },
+      { name: 'FaultyTrafficLights', status: 'operational', endpoint: '/api/faulty-traffic-lights' },
+      { name: 'CarParkAvailabilityv2', status: 'operational', endpoint: '/api/carpark-availability' },
     ],
     timestamp: new Date().toISOString(),
   });
