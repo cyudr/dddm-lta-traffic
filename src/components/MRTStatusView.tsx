@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MRTLineStatus, ServiceAdvisory } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { LTAMRTSystemMap } from './LTAMRTSystemMap';
+import { MRTCrowdDensityWidget } from './MRTCrowdDensityWidget';
 import {
   Train,
   RefreshCw,
@@ -193,6 +194,11 @@ export const MRTStatusView: React.FC<MRTStatusViewProps> = ({
               );
             })}
           </div>
+        </section>
+
+        {/* 3.5 Real-Time Platform Crowd Density Telemetry (PCDRealTime) */}
+        <section id="mrt-crowd-density-section">
+          <MRTCrowdDensityWidget />
         </section>
 
         {/* 4. Live Service Advisories from LTA DataMall */}

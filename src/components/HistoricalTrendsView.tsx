@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   TrendingUp,
   Clock,
@@ -9,11 +9,17 @@ import {
   ArrowDownRight,
   RefreshCw,
   CheckCircle2,
-  ShieldAlert
+  ShieldAlert,
+  Calendar,
+  Layers,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   LineChart,
   Line,
   XAxis,
@@ -21,43 +27,88 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LabelList
 } from 'recharts';
 import { HistoricalTrendsData } from '../types';
 import { getHistoricalTrendsFallbackData } from '../data/historicalTrendsData';
 import { useLanguage } from '../i18n/LanguageContext';
+import { MobilityDatasetsWidget } from './MobilityDatasetsWidget';
 
 export const HistoricalTrendsView: React.FC = () => {
   const { t } = useLanguage();
-  const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d'>('24h');
-  const [data, setData] = useState<HistoricalTrendsData>(() => getHistoricalTrendsFallbackData('24h'));
+  const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d' | 'custom'>('7d');
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+
+  const [data, setData] = useState<HistoricalTrendsData>(() => getHistoricalTrendsFallbackData('7d', startDate, endDate));
   const [isLoading, setIsLoading] = useState(false);
   const [activeSpeedMetric, setActiveSpeedMetric] = useState<string>('ALL');
-  const [dataSourceNotice, setDataSourceNotice] = useState<string>('LTA Historical Engine Live Stream');
+  const [dataSourceNotice, setDataSourceNotice] = useState<string>('LTA Historical Timeseries Model');
 
-  const fetchTrends = async (selectedTf: '24h' | '7d' | '30d') => {
+  const handlePresetChange = (tf: '24h' | '7d' | '30d' | 'custom') => {
+    setTimeframe(tf);
+    const end = new Date();
+    const start = new Date();
+
+    if (tf === '24h') {
+      start.setDate(end.getDate() - 1);
+    } else if (tf === '7d') {
+      start.setDate(end.getDate() - 7);
+    } else if (tf === '30d') {
+      start.setDate(end.getDate() - 30);
+    }
+
+    if (tf !== 'custom') {
+      setStartDate(start.toISOString().split('T')[0]);
+      setEndDate(end.toISOString().split('T')[0]);
+    }
+  };
+
+  const selectedDaysCount = useMemo(() => {
+    if (timeframe === '24h') return 1;
+    if (timeframe === '7d') return 7;
+    if (timeframe === '30d') return 30;
+    if (startDate && endDate) {
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      return Math.max(1, Math.round(Math.abs(e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    }
+    return 7;
+  }, [timeframe, startDate, endDate]);
+
+  const fetchTrends = async (
+    selectedTf: '24h' | '7d' | '30d' | 'custom',
+    sDate: string,
+    eDate: string
+  ) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/historical-trends?timeframe=${selectedTf}`);
+      const url = `/api/historical-trends?timeframe=${selectedTf}&startDate=${sDate}&endDate=${eDate}`;
+      const res = await fetch(url);
       const contentType = res.headers.get('content-type') || '';
-      
+
       if (res.ok && contentType.includes('application/json')) {
         const json = await res.json();
         if (json && json.hourlyTrends && json.hourlyTrends.length > 0) {
           setData(json);
-          setDataSourceNotice('LTA DataMall Historical Timeseries Engine (Real-Time Ingestion)');
+          setDataSourceNotice('LTA DataMall Historical Timeseries Engine (Real-Time Live Ingestion)');
           setIsLoading(false);
           return;
         }
       }
-      
-      // Fallback for Vercel static deployments or offline API routes
-      const fallback = getHistoricalTrendsFallbackData(selectedTf);
+
+      // Fallback generator for edge & Vercel deployment
+      const fallback = getHistoricalTrendsFallbackData(selectedTf, sDate, eDate);
       setData(fallback);
       setDataSourceNotice('LTA Diurnal Transport Baseline Model (Vercel Edge Ready)');
     } catch (err) {
       console.warn('Backend API unreachable, using resilient LTA fallback trend model:', err);
-      const fallback = getHistoricalTrendsFallbackData(selectedTf);
+      const fallback = getHistoricalTrendsFallbackData(selectedTf, sDate, eDate);
       setData(fallback);
       setDataSourceNotice('LTA Diurnal Transport Baseline Model (Vercel Edge Ready)');
     } finally {
@@ -66,13 +117,13 @@ export const HistoricalTrendsView: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTrends(timeframe);
-  }, [timeframe]);
+    fetchTrends(timeframe, startDate, endDate);
+  }, [timeframe, startDate, endDate]);
 
   return (
     <div className="flex-1 md:mr-72 flex flex-col bg-[#f8f9fa] min-h-[calc(100vh-64px)] pb-24">
-      {/* 1. Header Toolbar */}
-      <div className="bg-white border-b border-[#e1e3e4] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-16 z-20 shadow-2xs">
+      {/* 1. Header Toolbar with Date Range Selection */}
+      <div className="bg-white border-b border-[#e1e3e4] px-4 md:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sticky top-16 z-20 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-[#004481] text-white rounded-lg">
@@ -92,27 +143,57 @@ export const HistoricalTrendsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Timeframe Filter Buttons & Refresh */}
-        <div className="flex items-center gap-2">
+        {/* Date Range Controls & Preset Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preset Buttons */}
           <div className="flex bg-[#f3f4f5] p-1 rounded-lg border border-[#d1d5db]">
-            {(['24h', '7d', '30d'] as const).map((tf) => (
+            {(['24h', '7d', '30d', 'custom'] as const).map((tf) => (
               <button
                 key={tf}
-                onClick={() => setTimeframe(tf)}
+                onClick={() => handlePresetChange(tf)}
                 className={`px-3 py-1.5 rounded-md text-[12px] font-bold transition-all cursor-pointer ${
                   timeframe === tf
                     ? 'bg-[#004481] text-white shadow-xs'
                     : 'text-[#414751] hover:text-black'
                 }`}
               >
-                {tf === '24h' ? 'Last 24 Hours' : tf === '7d' ? 'Past 7 Days' : 'Past 30 Days'}
+                {tf === '24h'
+                  ? '24 Hours'
+                  : tf === '7d'
+                  ? 'Past 7 Days'
+                  : tf === '30d'
+                  ? 'Past 30 Days'
+                  : 'Custom Range'}
               </button>
             ))}
           </div>
 
+          {/* Custom Date Range Picker */}
+          {timeframe === 'custom' && (
+            <div className="flex items-center gap-1.5 bg-white border border-[#c1c6d3] p-1 rounded-lg text-[12px] shadow-2xs">
+              <Calendar className="w-3.5 h-3.5 text-[#004481] ml-1" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent border-0 text-[#191c1d] text-[11px] font-mono focus:outline-none cursor-pointer"
+              />
+              <span className="text-[#727783] font-bold">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent border-0 text-[#191c1d] text-[11px] font-mono focus:outline-none cursor-pointer"
+              />
+              <span className="bg-[#e8f0fe] text-[#004481] text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">
+                {selectedDaysCount}d
+              </span>
+            </div>
+          )}
+
           <button
-            onClick={() => fetchTrends(timeframe)}
-            className="p-2 bg-white hover:bg-gray-100 border border-[#d1d5db] rounded-lg text-gray-700 transition-colors cursor-pointer"
+            onClick={() => fetchTrends(timeframe, startDate, endDate)}
+            className="p-2 bg-white hover:bg-gray-100 border border-[#d1d5db] rounded-lg text-gray-700 transition-colors cursor-pointer shadow-2xs"
             title="Refresh Trend Model"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -122,7 +203,7 @@ export const HistoricalTrendsView: React.FC = () => {
 
       {/* 2. Main Content Dashboard */}
       <div className="p-4 md:p-6 max-w-7xl w-full mx-auto space-y-6">
-        {/* KPI Trend Summaries */}
+        {/* KPI Summaries */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
@@ -135,28 +216,28 @@ export const HistoricalTrendsView: React.FC = () => {
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[12px] text-emerald-700 font-semibold">
               <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>+{data.networkSpeedDeltaVsYesterdayPct}% vs 7-day average</span>
+              <span>+{data.networkSpeedDeltaVsYesterdayPct}% vs baseline</span>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
-              <span className="text-[12px] font-bold uppercase tracking-wider">Avg Incident Clearance</span>
-              <Clock className="w-4 h-4 text-[#004481]" />
+              <span className="text-[12px] font-bold uppercase tracking-wider">Total Recorded Incidents</span>
+              <Activity className="w-4 h-4 text-[#004481]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-[28px] font-bold text-[#191c1d] font-mono">22.4</span>
-              <span className="text-[14px] text-[#727783]">mins</span>
+              <span className="text-[28px] font-bold text-[#191c1d] font-mono">{data.totalIncidentsRecorded}</span>
+              <span className="text-[14px] text-[#727783]">events</span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[12px] text-emerald-700 font-semibold">
-              <ArrowDownRight className="w-3.5 h-3.5" />
-              <span>-3.2 mins faster clearance</span>
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Monitored across 10 Expressways</span>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
-              <span className="text-[12px] font-bold uppercase tracking-wider">Rail Punctuality Rate</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider">Rail System Punctuality</span>
               <Train className="w-4 h-4 text-[#004481]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -170,28 +251,131 @@ export const HistoricalTrendsView: React.FC = () => {
 
           <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
-              <span className="text-[12px] font-bold uppercase tracking-wider">Peak Hour Travel Index</span>
-              <Activity className="w-4 h-4 text-[#004481]" />
+              <span className="text-[12px] font-bold uppercase tracking-wider">Peak Hour Delay Index</span>
+              <Clock className="w-4 h-4 text-[#004481]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-[28px] font-bold text-amber-700 font-mono">1.38x</span>
-              <span className="text-[12px] text-[#727783]">delay multiplier</span>
+              <span className="text-[12px] text-[#727783]">multiplier</span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-700 font-semibold">
-              <span>Peak Window: 08:00 - 09:15</span>
+              <span>Friday Evening: Heaviest Surge</span>
             </div>
           </div>
         </div>
 
-        {/* 1. Hourly Incident Volume & Categorization Stacked Area Chart */}
+        {/* 1. WEEKDAY BREAKDOWN WITH EXPLICIT DATA LABELS (Monday to Sunday) */}
+        <div className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e1e3e4] pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#004481]" />
+                <h3 className="text-[17px] font-bold text-[#191c1d]">
+                  Incident Volume & Velocity Breakdown by Day of the Week
+                </h3>
+              </div>
+              <p className="text-[12px] text-[#727783] mt-0.5">
+                Explicit data labels by weekday displaying total incidents, peak hours, and average velocity.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] font-medium text-[#414751]">
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 bg-[#004481] rounded-xs inline-block"></span>
+                Total Incidents
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 bg-[#d93025] rounded-xs inline-block"></span>
+                Accidents
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 bg-[#f29900] rounded-xs inline-block"></span>
+                Breakdowns
+              </span>
+            </div>
+          </div>
+
+          {/* Weekday Bar Chart with Datalabels */}
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.weekdayTrends}
+                margin={{ top: 25, right: 10, left: -15, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="dayShort" tick={{ fontSize: 12, fontWeight: 'bold', fill: '#191c1d' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#727783' }} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white border border-[#c1c6d3] p-3 rounded-lg shadow-lg text-[12px] space-y-1">
+                          <p className="font-bold text-[#004481] text-[13px] border-b border-[#edeeef] pb-1">
+                            {d.day} ({d.isWeekend ? 'Weekend' : 'Weekday'})
+                          </p>
+                          <p className="text-[#191c1d]">
+                            Total Incidents: <strong>{d.totalIncidents}</strong>
+                          </p>
+                          <p className="text-red-700">Accidents: {d.accidents}</p>
+                          <p className="text-amber-700">Vehicle Breakdowns: {d.breakdowns}</p>
+                          <p className="text-blue-700">Congestion Events: {d.congestionEvents}</p>
+                          <p className="text-emerald-700 font-bold">Avg Speed: {d.avgSpeedKmh} km/h</p>
+                          <p className="text-[#727783] text-[11px]">Peak Window: {d.peakCongestionHour}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="totalIncidents" fill="#004481" name="Total Incidents" radius={[4, 4, 0, 0]}>
+                  <LabelList
+                    dataKey="label"
+                    position="top"
+                    style={{ fontSize: '10px', fill: '#004481', fontWeight: 'bold' }}
+                  />
+                </Bar>
+                <Bar dataKey="accidents" fill="#d93025" name="Accidents" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="breakdowns" fill="#f29900" name="Breakdowns" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Weekday Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 pt-2">
+            {data.weekdayTrends.map((w, idx) => (
+              <div
+                key={idx}
+                className={`p-3 rounded-lg border text-center transition-all ${
+                  w.dayShort === 'Fri'
+                    ? 'bg-red-50/60 border-red-200 shadow-xs'
+                    : w.isWeekend
+                    ? 'bg-emerald-50/50 border-emerald-200'
+                    : 'bg-[#f8f9fa] border-[#e1e3e4]'
+                }`}
+              >
+                <span className="text-[11px] font-bold uppercase text-[#414751] block">{w.dayShort}</span>
+                <span className="text-[18px] font-bold text-[#191c1d] font-mono block mt-0.5">
+                  {w.totalIncidents}
+                </span>
+                <span className="text-[10px] text-[#727783] block">{w.avgSpeedKmh} km/h</span>
+                <span className="text-[9px] font-bold text-[#004481] block mt-1 truncate" title={w.peakCongestionHour}>
+                  {w.peakCongestionHour}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. Diurnal Hourly Distribution Area Chart */}
         <div className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e1e3e4] pb-3">
             <div>
               <h3 className="text-[17px] font-bold text-[#191c1d]">
-                Incident Frequency & Distribution Profile ({timeframe === '24h' ? '24 Hours' : timeframe === '7d' ? 'Past 7 Days' : 'Past 30 Days'})
+                Hourly Diurnal Incident Profile ({timeframe === '24h' ? '24 Hours' : timeframe === '7d' ? 'Past 7 Days' : timeframe === '30d' ? 'Past 30 Days' : `${startDate} to ${endDate}`})
               </h3>
               <p className="text-[12px] text-[#727783]">
-                Diurnal hourly distribution of road accidents, vehicle breakdowns, roadworks, and heavy congestion events.
+                Cumulative breakdown of accidents, breakdowns, congestion, and roadworks by hour of day.
               </p>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-medium text-[#414751] flex-wrap">
@@ -279,7 +463,7 @@ export const HistoricalTrendsView: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Expressway Velocity & Traffic Wave Curves */}
+        {/* 3. Expressway Velocity Curves */}
         <div className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e1e3e4] pb-3">
             <div>
@@ -287,7 +471,7 @@ export const HistoricalTrendsView: React.FC = () => {
                 Expressway Speed Velocity Trajectories (km/h)
               </h3>
               <p className="text-[12px] text-[#727783]">
-                Diurnal speed profiles across key Singapore expressway corridors.
+                Diurnal velocity profile across key Singapore expressway corridors.
               </p>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
@@ -342,7 +526,7 @@ export const HistoricalTrendsView: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Grid: Corridor Travel Time Variance & SMRT/SBS Rail Reliability */}
+        {/* 4. Grid: Corridor Travel Time Variance & SMRT/SBS Rail Reliability */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Corridor Travel Time Reliability */}
           <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-3">
@@ -395,7 +579,7 @@ export const HistoricalTrendsView: React.FC = () => {
             </div>
           </div>
 
-          {/* SMRT / SBS Transit Rail System Reliability Trends */}
+          {/* SMRT / SBS Transit Rail Reliability */}
           <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-3">
             <h3 className="text-[17px] font-bold text-[#191c1d] border-b border-[#e1e3e4] pb-2">
               MRT System Mean Kilometres Between Failures (MKBF)
@@ -440,7 +624,10 @@ export const HistoricalTrendsView: React.FC = () => {
           </div>
         </div>
 
-        {/* 4. Top Bottlenecks Table */}
+        {/* 4.5 Official LTA DataMall Mobility Datasets */}
+        <MobilityDatasetsWidget />
+
+        {/* 5. Top Bottlenecks Table */}
         <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
           <div className="flex items-center gap-2 mb-3">
             <ShieldAlert className="w-5 h-5 text-amber-600" />

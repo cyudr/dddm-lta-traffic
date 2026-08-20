@@ -94,6 +94,78 @@ export const ApiStatusModal: React.FC<ApiStatusModalProps> = ({ isOpen, onClose 
       status: 'Operational',
       cadence: 'Every 1 min',
     },
+    {
+      id: 'busArrival',
+      name: 'BusArrival (v3)',
+      desc: 'Real-time bus arrival timings, load occupancy (SEA/SDA/LSD) & wheelchair access',
+      path: '/api/bus-arrival?busStopCode=01012',
+      ltaPath: 'BusArrivalv3',
+      status: 'Operational',
+      cadence: 'Every 1 min',
+    },
+    {
+      id: 'busStops',
+      name: 'BusStops',
+      desc: 'Master directory of 5,000+ public bus stops and coordinate locations',
+      path: '/api/bus-stops',
+      ltaPath: 'BusStops',
+      status: 'Operational',
+      cadence: 'Daily / Static',
+    },
+    {
+      id: 'mrtCrowd',
+      name: 'PCDRealTime',
+      desc: 'Real-time MRT platform crowd levels across North-South, East-West, Circle, Downtown & TEL',
+      path: '/api/pcd-realtime?line=NSL',
+      ltaPath: 'PCDRealTime',
+      status: 'Operational',
+      cadence: 'Every 10 mins',
+    },
+    {
+      id: 'taxiAvail',
+      name: 'Taxi-Availability',
+      desc: 'Live coordinate coordinates of available roaming taxis across Singapore',
+      path: '/api/taxi-availability',
+      ltaPath: 'Taxi-Availability',
+      status: 'Operational',
+      cadence: 'Every 1 min',
+    },
+    {
+      id: 'taxiStands',
+      name: 'TaxiStands',
+      desc: '316+ official taxi stands & passenger pick-up points with BFA accessibility tags',
+      path: '/api/taxi-stands',
+      ltaPath: 'TaxiStands',
+      status: 'Operational',
+      cadence: 'Monthly / Static',
+    },
+    {
+      id: 'bicycleParking',
+      name: 'BicycleParkingv2',
+      desc: '3,000+ bicycle racks with shelter status and rack type classifications',
+      path: '/api/bicycle-parking?lat=1.3521&lng=103.8198&dist=5',
+      ltaPath: 'BicycleParkingv2',
+      status: 'Operational',
+      cadence: 'Monthly / Radius',
+    },
+    {
+      id: 'roadOpenings',
+      name: 'RoadOpenings',
+      desc: 'Live utility excavation and pipe trenching permits (PUB, SP PowerGrid, Singtel)',
+      path: '/api/road-openings',
+      ltaPath: 'RoadOpenings',
+      status: 'Operational',
+      cadence: 'Daily',
+    },
+    {
+      id: 'mobilityDatasets',
+      name: 'PV / O-D Mobility Archives',
+      desc: 'Official monthly open data archives for bus and rail passenger transit flows',
+      path: '/api/mobility-datasets',
+      ltaPath: 'PV/Bus, PV/Train, O-D',
+      status: 'Operational',
+      cadence: 'Monthly',
+    },
   ];
 
   const testEndpoint = async (ep: typeof endpoints[0]) => {
@@ -228,7 +300,7 @@ export const ApiStatusModal: React.FC<ApiStatusModalProps> = ({ isOpen, onClose 
 
         {/* Footer */}
         <div className="p-3 bg-[#f8f9fa] border-t border-[#c1c6d3] flex justify-between items-center text-[12px] text-[#727783] px-4 shrink-0">
-          <span>Official LTA DataMall Account Key: <code className="font-mono text-[#004481]">3QiN8fMXQ/aEnjfKwkgZkA==</code></span>
+          <span>LTA DataMall Integration: <code className="font-mono text-[#004481]">LTA_ACCOUNT_KEY (.env)</code></span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 bg-[#004481] text-white rounded-lg font-semibold hover:bg-[#005baa] transition-colors cursor-pointer"

@@ -15,7 +15,11 @@ import {
   ZoomIn,
   ZoomOut,
   Car,
-  Train
+  Train,
+  LocateFixed,
+  Loader2,
+  CheckCircle2,
+  Crosshair
 } from 'lucide-react';
 
 interface GoogleTrafficMapProps {
@@ -216,6 +220,20 @@ export const GoogleTrafficMap: React.FC<GoogleTrafficMapProps> = ({
   const [showTransit, setShowTransit] = useState<boolean>(true);
   const [currentZoom, setCurrentZoom] = useState<number>(12);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
+  const [feedbackToast, setFeedbackToast] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
+  
+  const userLocationLayerRef = useRef<L.LayerGroup | null>(null);
+  const toastTimeoutRef = useRef<any>(null);
+
+  const showToast = (text: string, type: 'success' | 'info' | 'error' = 'info') => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setFeedbackToast({ text, type });
+    toastTimeoutRef.current = setTimeout(() => {
+      setFeedbackToast(null);
+    }, 3800);
+  };
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -247,6 +265,7 @@ export const GoogleTrafficMap: React.FC<GoogleTrafficMapProps> = ({
     transitLayerRef.current = L.layerGroup().addTo(map);
     markersLayerRef.current = L.layerGroup().addTo(map);
     camerasLayerRef.current = L.layerGroup().addTo(map);
+    userLocationLayerRef.current = L.layerGroup().addTo(map);
 
     map.on('zoomend', () => {
       setCurrentZoom(map.getZoom());
@@ -595,7 +614,111 @@ export const GoogleTrafficMap: React.FC<GoogleTrafficMapProps> = ({
 
   // Center to Singapore mainland
   const handleCenterSingapore = () => {
-    mapInstanceRef.current?.setView([1.3521, 103.8198], 12, { animate: true });
+    mapInstanceRef.current?.flyTo([1.3521, 103.8198], 12, { animate: true, duration: 1.0 });
+    showToast(t('centerSingapore'), 'info');
+  };
+
+  // Center to User Location if available, otherwise fallback to Center of Singapore
+  const handleCenterMap = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if ('geolocation' in navigator) {
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setIsLocating(false);
+          const { latitude, longitude, accuracy } = position.coords;
+
+          if (
+            typeof latitude === 'number' &&
+            typeof longitude === 'number' &&
+            !isNaN(latitude) &&
+            !isNaN(longitude)
+          ) {
+            setUserLocation({ lat: latitude, lng: longitude, accuracy });
+
+            // Render Google Maps Style Pulse Beacon Marker
+            if (userLocationLayerRef.current) {
+              userLocationLayerRef.current.clearLayers();
+
+              const pulseIcon = L.divIcon({
+                className: 'custom-user-location-marker',
+                html: `
+                  <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); cursor: pointer;">
+                    <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: rgba(26, 115, 232, 0.35); animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></div>
+                    <div style="position: relative; width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2.5px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>
+                  </div>
+                `,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+              });
+
+              const marker = L.marker([latitude, longitude], { icon: pulseIcon });
+              marker.bindPopup(
+                `<div style="font-family: Roboto, Arial, sans-serif; min-width: 180px; padding: 2px;">
+                  <div style="display: flex; items-center; gap: 4px; font-size: 13px; font-weight: bold; color: #1a73e8; margin-bottom: 2px;">
+                    📍 <span>${t('myLocation')}</span>
+                  </div>
+                  <div style="font-size: 11px; color: #5f6368;">GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}</div>
+                  ${accuracy ? `<div style="font-size: 10px; color: #80868b; margin-top: 2px;">Accuracy: ±${Math.round(accuracy)}m</div>` : ''}
+                </div>`,
+                { className: 'google-maps-popup' }
+              );
+
+              if (accuracy && accuracy <= 1500) {
+                const circle = L.circle([latitude, longitude], {
+                  radius: accuracy,
+                  color: '#1a73e8',
+                  fillColor: '#1a73e8',
+                  fillOpacity: 0.08,
+                  weight: 1,
+                });
+                userLocationLayerRef.current.addLayer(circle);
+              }
+
+              userLocationLayerRef.current.addLayer(marker);
+            }
+
+            // Smooth pan/zoom to user position
+            map.flyTo([latitude, longitude], 15, {
+              animate: true,
+              duration: 1.2,
+            });
+
+            showToast(
+              `${t('locatedSuccess')}${accuracy ? ` (±${Math.round(accuracy)}m)` : ''}`,
+              'success'
+            );
+          } else {
+            fallbackCenterSingapore();
+          }
+        },
+        (error) => {
+          setIsLocating(false);
+          console.warn('Geolocation unavailable/denied:', error.message);
+          fallbackCenterSingapore(true);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 8000,
+          maximumAge: 30000,
+        }
+      );
+    } else {
+      fallbackCenterSingapore();
+    }
+  };
+
+  const fallbackCenterSingapore = (isUnavailable = false) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    map.flyTo([1.3521, 103.8198], 12, { animate: true, duration: 1.0 });
+    if (isUnavailable) {
+      showToast(t('locationUnavailable'), 'info');
+    } else {
+      showToast(t('centerSingapore'), 'info');
+    }
   };
 
   const toggleFullscreen = () => {
@@ -613,6 +736,18 @@ export const GoogleTrafficMap: React.FC<GoogleTrafficMapProps> = ({
     <div className="w-full h-full relative overflow-hidden select-none bg-[#e5e3df]">
       {/* Real Map Canvas */}
       <div ref={mapContainerRef} className="w-full h-full z-10" />
+
+      {/* Feedback Toast Notification */}
+      {feedbackToast && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-medium shadow-lg backdrop-blur-md transition-all bg-white/95 border border-gray-200/90 text-gray-800 pointer-events-none">
+          {feedbackToast.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <LocateFixed className="w-4 h-4 text-[#1a73e8] shrink-0" />
+          )}
+          <span>{feedbackToast.text}</span>
+        </div>
+      )}
 
       {/* 1. TOP-LEFT: Google Maps Floating Layer Selector Widget */}
       <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center bg-white rounded-lg shadow-md border border-gray-200/80 overflow-hidden font-sans">
@@ -663,23 +798,75 @@ export const GoogleTrafficMap: React.FC<GoogleTrafficMapProps> = ({
           <Train className="w-3.5 h-3.5" />
           <span>MRT Lines</span>
         </button>
+
+        {/* Center Map Quick Button in Top Bar */}
+        <button
+          onClick={handleCenterMap}
+          disabled={isLocating}
+          className={`px-3 py-2 text-[13px] font-medium transition-colors cursor-pointer border-l border-gray-200 flex items-center gap-1.5 ${
+            isLocating
+              ? 'bg-blue-50 text-[#1a73e8]'
+              : userLocation
+              ? 'text-[#1a73e8] hover:bg-blue-50'
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+          title={t('centerMap')}
+        >
+          {isLocating ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1a73e8]" />
+          ) : (
+            <LocateFixed className={`w-3.5 h-3.5 ${userLocation ? 'text-[#1a73e8]' : 'text-gray-600'}`} />
+          )}
+          <span>{isLocating ? t('locating') : t('centerMap')}</span>
+        </button>
       </div>
 
       {/* 2. BOTTOM-RIGHT: Google Maps Authentic Floating Controls */}
       <div className="absolute bottom-6 right-4 z-20 flex flex-col items-center gap-2">
-        {/* Street View / Center Target Button */}
+        {/* Center Map / My Location & View Controls */}
         <div className="flex flex-col bg-white rounded-md shadow-md border border-gray-200 overflow-hidden">
+          {/* Main Center Button: Centers to User Location if available, or Center of Singapore */}
+          <button
+            onClick={handleCenterMap}
+            disabled={isLocating}
+            className={`p-2.5 transition-colors cursor-pointer border-b border-gray-200 flex items-center justify-center relative group ${
+              userLocation
+                ? 'bg-blue-50/80 text-[#1a73e8] hover:bg-blue-100/80'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title={`${t('centerMap')} (${t('myLocation')} / ${t('centerSingapore')})`}
+            aria-label={t('centerMap')}
+          >
+            {isLocating ? (
+              <Loader2 className="w-5 h-5 text-[#1a73e8] animate-spin" />
+            ) : (
+              <LocateFixed
+                className={`w-5 h-5 transition-transform group-hover:scale-110 ${
+                  userLocation ? 'text-[#1a73e8]' : 'text-gray-700 group-hover:text-[#1a73e8]'
+                }`}
+              />
+            )}
+            {userLocation && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#1a73e8] rounded-full ring-1 ring-white"></span>
+            )}
+          </button>
+
+          {/* Quick Singapore Mainland Recenter Button */}
           <button
             onClick={handleCenterSingapore}
-            className="p-2 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer border-b border-gray-200"
-            title="Recenter to Singapore"
+            className="p-2.5 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer border-b border-gray-200 flex items-center justify-center group"
+            title={t('centerSingapore')}
+            aria-label={t('centerSingapore')}
           >
-            <Compass className="w-5 h-5 text-[#1a73e8]" />
+            <Compass className="w-5 h-5 text-gray-600 group-hover:text-[#1a73e8] transition-colors" />
           </button>
+
+          {/* Fullscreen Toggle */}
           <button
             onClick={toggleFullscreen}
-            className="p-2 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="p-2.5 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center"
             title="Toggle Fullscreen"
+            aria-label="Toggle Fullscreen"
           >
             {isFullscreen ? (
               <Minimize2 className="w-5 h-5" />
@@ -694,14 +881,16 @@ export const GoogleTrafficMap: React.FC<GoogleTrafficMapProps> = ({
           <button
             onClick={handleZoomIn}
             className="p-2.5 text-gray-700 hover:bg-gray-100 font-bold text-[18px] leading-none transition-colors cursor-pointer border-b border-gray-200 flex items-center justify-center w-10 h-10"
-            title="Zoom in"
+            title={t('zoomIn')}
+            aria-label={t('zoomIn')}
           >
             +
           </button>
           <button
             onClick={handleZoomOut}
             className="p-2.5 text-gray-700 hover:bg-gray-100 font-bold text-[18px] leading-none transition-colors cursor-pointer flex items-center justify-center w-10 h-10"
-            title="Zoom out"
+            title={t('zoomOut')}
+            aria-label={t('zoomOut')}
           >
             −
           </button>

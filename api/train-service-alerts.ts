@@ -1,4 +1,4 @@
-const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '3QiN8fMXQ/aEnjfKwkgZkA==';
+const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');

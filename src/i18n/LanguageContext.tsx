@@ -54,6 +54,13 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     zoomIn: 'Zoom In',
     zoomOut: 'Zoom Out',
     resetZoom: 'Reset View',
+    centerMap: 'Center Map',
+    myLocation: 'My Location',
+    centerToLocation: 'Center to My Location',
+    centerSingapore: 'Center to Singapore',
+    locating: 'Locating...',
+    locatedSuccess: 'Centered to your location',
+    locationUnavailable: 'Location unavailable; centered to Singapore',
 
     // Right Sidebar Tabs
     liveFeed: 'Live Feed',
@@ -160,6 +167,13 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     zoomIn: '放大',
     zoomOut: '缩小',
     resetZoom: '重置视角',
+    centerMap: '定位与居中',
+    myLocation: '我的位置',
+    centerToLocation: '定位到当前位置',
+    centerSingapore: '居中至新加坡',
+    locating: '正在定位...',
+    locatedSuccess: '已定位至您的当前位置',
+    locationUnavailable: '无法获取位置，已居中至新加坡',
 
     // Right Sidebar Tabs
     liveFeed: '实时警报',
@@ -266,6 +280,13 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     zoomIn: 'Zum Masuk',
     zoomOut: 'Zum Keluar',
     resetZoom: 'Tetap Semula Pandangan',
+    centerMap: 'Pusatkan Peta',
+    myLocation: 'Lokasi Saya',
+    centerToLocation: 'Pusatkan ke Lokasi Saya',
+    centerSingapore: 'Pusatkan ke Singapura',
+    locating: 'Mencari lokasi...',
+    locatedSuccess: 'Berjaya dipusatkan ke lokasi anda',
+    locationUnavailable: 'Lokasi tidak dapat dikesan, dipusatkan ke Singapura',
 
     // Right Sidebar Tabs
     liveFeed: 'Suapan Langsung',
@@ -372,6 +393,13 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     zoomIn: '拡大',
     zoomOut: '縮小',
     resetZoom: '全体表示',
+    centerMap: 'マップを中央に配置',
+    myLocation: '現在地',
+    centerToLocation: '現在地に移動',
+    centerSingapore: 'シンガポール中央に移動',
+    locating: '現在地を取得中...',
+    locatedSuccess: '現在地を表示しました',
+    locationUnavailable: '位置情報を取得できませんでした。シンガポール中央を表示します',
 
     // Right Sidebar Tabs
     liveFeed: '速報フィード',
@@ -478,6 +506,13 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     zoomIn: '확대',
     zoomOut: '축소',
     resetZoom: '화면 맞춤',
+    centerMap: '지도 중앙 맞춤',
+    myLocation: '내 위치',
+    centerToLocation: '내 위치로 이동',
+    centerSingapore: '싱가포르 중앙으로 이동',
+    locating: '위치 확인 중...',
+    locatedSuccess: '현재 위치로 이동했습니다',
+    locationUnavailable: '위치를 확인할 수 없어 싱가포르 중앙으로 이동합니다',
 
     // Right Sidebar Tabs
     liveFeed: '실시간 피드',
@@ -584,6 +619,13 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     zoomIn: 'பெரிதாக்கு',
     zoomOut: 'சிறிதாக்கு',
     resetZoom: 'மீட்டமை',
+    centerMap: 'வரைபடத்தை மையப்படுத்து',
+    myLocation: 'எனது இருப்பிடம்',
+    centerToLocation: 'எனது இருப்பிடத்திற்கு நகர்த்து',
+    centerSingapore: 'சிங்கப்பூருக்கு மையப்படுத்து',
+    locating: 'இருப்பிடத்தைக் கண்டறிகிறது...',
+    locatedSuccess: 'உங்கள் இருப்பிடம் காண்பிக்கப்பட்டது',
+    locationUnavailable: 'இருப்பிடம் கிடைக்கவில்லை, சிங்கப்பூருக்கு மாற்றப்பட்டது',
 
     // Right Sidebar Tabs
     liveFeed: 'நேரலை ஓட்டம்',

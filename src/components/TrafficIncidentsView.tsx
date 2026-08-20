@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { TrafficIncident, ExpresswayTrafficSegment, TrafficCamera } from '../types';
-import { EXPRESSWAY_SEGMENTS, TRAFFIC_CAMERAS } from '../data/transportData';
+import { EXPRESSWAY_SEGMENTS, TRAFFIC_CAMERAS, getDynamicExpresswaySegments } from '../data/transportData';
 import { GoogleTrafficMap } from './GoogleTrafficMap';
 import { CameraViewerModal } from './CameraViewerModal';
+import { RoadOpeningsWidget } from './RoadOpeningsWidget';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
   Filter,
@@ -25,7 +26,8 @@ import {
   RefreshCw,
   Eye,
   Maximize2,
-  TrendingUp
+  TrendingUp,
+  HardHat
 } from 'lucide-react';
 
 interface TrafficIncidentsViewProps {
@@ -38,7 +40,7 @@ interface TrafficIncidentsViewProps {
   onNavigateToTrends?: () => void;
 }
 
-type RightPanelTab = 'feed' | 'overview' | 'details' | 'cameras';
+type RightPanelTab = 'feed' | 'overview' | 'details' | 'cameras' | 'roadopenings';
 
 export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
   incidents,
@@ -88,6 +90,16 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
   const accidentsCount = incidents.filter((i) => i.type === 'accident').length;
   const roadworksCount = incidents.filter((i) => i.type === 'roadworks').length;
   const congestionCount = incidents.filter((i) => i.type === 'congestion').length;
+
+  const dynamicExpresswaySegments = useMemo(() => {
+    return getDynamicExpresswaySegments(incidents);
+  }, [incidents]);
+
+  const avgIslandSpeed = useMemo(() => {
+    if (!dynamicExpresswaySegments || dynamicExpresswaySegments.length === 0) return 68;
+    const sum = dynamicExpresswaySegments.reduce((acc, curr) => acc + curr.speedKmh, 0);
+    return Math.round(sum / dynamicExpresswaySegments.length);
+  }, [dynamicExpresswaySegments]);
 
   const handleSelectIncident = (incidentId: string) => {
     setActiveIncidentId(incidentId);
@@ -225,7 +237,7 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
           className="flex-1 relative w-full h-full min-h-[420px] bg-[#e5e3df] overflow-hidden"
         >
           <GoogleTrafficMap
-            expresswaySegments={EXPRESSWAY_SEGMENTS}
+            expresswaySegments={dynamicExpresswaySegments}
             incidents={incidents}
             cameras={TRAFFIC_CAMERAS}
             showRoadFlow={showRoadFlow}
@@ -305,6 +317,18 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
               >
                 <Video className="w-3.5 h-3.5" />
                 <span>{t('cctvFeeds')}</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('roadopenings')}
+                className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'roadopenings'
+                    ? 'bg-[#004481] text-white shadow-xs'
+                    : 'text-[#414751] hover:bg-[#edeeef]'
+                }`}
+              >
+                <HardHat className="w-3.5 h-3.5" />
+                <span>Road Works</span>
               </button>
             </div>
 
@@ -507,7 +531,7 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
                       {t('avgIslandSpeed')}
                     </span>
                     <strong className="text-[18px] font-mono font-bold text-[#004481]">
-                      52.4 km/h
+                      {avgIslandSpeed} km/h
                     </strong>
                   </div>
 
@@ -567,7 +591,7 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
                   {t('expresswaySpeedsSummary')}
                 </h4>
                 <div className="divide-y divide-[#edeeef] text-[13px]">
-                  {EXPRESSWAY_SEGMENTS.slice(0, 7).map((exp) => (
+                  {dynamicExpresswaySegments.slice(0, 7).map((exp) => (
                     <div
                       key={exp.id}
                       onClick={() => handleSelectExpressway(exp)}
@@ -801,6 +825,13 @@ export const TrafficIncidentsView: React.FC<TrafficIncidentsViewProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Tab 5: Road Openings & Utility Works Widget */}
+          {activeTab === 'roadopenings' && (
+            <div className="p-3.5 flex-1 overflow-y-auto">
+              <RoadOpeningsWidget />
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '3QiN8fMXQ/aEnjfKwkgZkA==';
+const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '';
 
 const EXPRESSWAY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   PIE: { lat: 1.3325, lng: 103.8200 },

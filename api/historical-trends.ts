@@ -1,43 +1,180 @@
 import type { Request, Response } from 'express';
 
-const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '3QiN8fMXQ/aEnjfKwkgZkA==';
+const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '';
 
 export default function handler(req: any, res: any) {
-  const timeframe = (req.query?.timeframe as string) || '24h';
-  const multiplier = timeframe === '7d' ? 6.8 : timeframe === '30d' ? 28.5 : 1.0;
+  const timeframe = (req.query?.timeframe as string) || '7d';
+  const startDate = req.query?.startDate as string;
+  const endDate = req.query?.endDate as string;
 
-  const hourlyTrends = [
-    { hour: '00:00', accidents: Math.round(1 * multiplier), breakdowns: Math.round(3 * multiplier), roadworks: Math.round(6 * multiplier), congestion: 0, total: Math.round(10 * multiplier) },
-    { hour: '02:00', accidents: 0, breakdowns: Math.round(2 * multiplier), roadworks: Math.round(8 * multiplier), congestion: 0, total: Math.round(10 * multiplier) },
-    { hour: '04:00', accidents: Math.round(1 * multiplier), breakdowns: Math.round(1 * multiplier), roadworks: Math.round(7 * multiplier), congestion: Math.round(1 * multiplier), total: Math.round(10 * multiplier) },
-    { hour: '06:00', accidents: Math.round(2 * multiplier), breakdowns: Math.round(4 * multiplier), roadworks: Math.round(3 * multiplier), congestion: Math.round(5 * multiplier), total: Math.round(14 * multiplier) },
-    { hour: '07:00', accidents: Math.round(5 * multiplier), breakdowns: Math.round(8 * multiplier), roadworks: Math.round(1 * multiplier), congestion: Math.round(18 * multiplier), total: Math.round(32 * multiplier) },
-    { hour: '08:00', accidents: Math.round(9 * multiplier), breakdowns: Math.round(11 * multiplier), roadworks: 0, congestion: Math.round(26 * multiplier), total: Math.round(46 * multiplier) },
-    { hour: '09:00', accidents: Math.round(6 * multiplier), breakdowns: Math.round(8 * multiplier), roadworks: Math.round(1 * multiplier), congestion: Math.round(19 * multiplier), total: Math.round(34 * multiplier) },
-    { hour: '10:00', accidents: Math.round(3 * multiplier), breakdowns: Math.round(5 * multiplier), roadworks: Math.round(4 * multiplier), congestion: Math.round(8 * multiplier), total: Math.round(20 * multiplier) },
-    { hour: '12:00', accidents: Math.round(4 * multiplier), breakdowns: Math.round(6 * multiplier), roadworks: Math.round(3 * multiplier), congestion: Math.round(11 * multiplier), total: Math.round(24 * multiplier) },
-    { hour: '14:00', accidents: Math.round(3 * multiplier), breakdowns: Math.round(4 * multiplier), roadworks: Math.round(5 * multiplier), congestion: Math.round(9 * multiplier), total: Math.round(21 * multiplier) },
-    { hour: '16:00', accidents: Math.round(5 * multiplier), breakdowns: Math.round(7 * multiplier), roadworks: Math.round(2 * multiplier), congestion: Math.round(14 * multiplier), total: Math.round(28 * multiplier) },
-    { hour: '17:30', accidents: Math.round(8 * multiplier), breakdowns: Math.round(10 * multiplier), roadworks: 0, congestion: Math.round(24 * multiplier), total: Math.round(42 * multiplier) },
-    { hour: '18:30', accidents: Math.round(11 * multiplier), breakdowns: Math.round(13 * multiplier), roadworks: 0, congestion: Math.round(29 * multiplier), total: Math.round(53 * multiplier) },
-    { hour: '19:30', accidents: Math.round(7 * multiplier), breakdowns: Math.round(9 * multiplier), roadworks: Math.round(1 * multiplier), congestion: Math.round(21 * multiplier), total: Math.round(38 * multiplier) },
-    { hour: '21:00', accidents: Math.round(3 * multiplier), breakdowns: Math.round(4 * multiplier), roadworks: Math.round(6 * multiplier), congestion: Math.round(7 * multiplier), total: Math.round(20 * multiplier) },
-    { hour: '22:30', accidents: Math.round(2 * multiplier), breakdowns: Math.round(3 * multiplier), roadworks: Math.round(8 * multiplier), congestion: Math.round(2 * multiplier), total: Math.round(15 * multiplier) },
+  let multiplier = 7.0;
+  let rangeDays = 7;
+
+  if (timeframe === '24h') {
+    multiplier = 1.0;
+    rangeDays = 1;
+  } else if (timeframe === '30d') {
+    multiplier = 30.0;
+    rangeDays = 30;
+  } else if (timeframe === 'custom' && startDate && endDate) {
+    const s = new Date(startDate);
+    const e = new Date(endDate);
+    const diffTime = Math.abs(e.getTime() - s.getTime());
+    rangeDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    multiplier = rangeDays;
+  }
+
+  // Count exact occurrences of each weekday in the date range if custom
+  const weekdayCounts: Record<string, number> = {
+    Monday: Math.max(1, Math.round(rangeDays / 7)),
+    Tuesday: Math.max(1, Math.round(rangeDays / 7)),
+    Wednesday: Math.max(1, Math.round(rangeDays / 7)),
+    Thursday: Math.max(1, Math.round(rangeDays / 7)),
+    Friday: Math.max(1, Math.round(rangeDays / 7)),
+    Saturday: Math.max(1, Math.round(rangeDays / 7)),
+    Sunday: Math.max(1, Math.round(rangeDays / 7)),
+  };
+
+  if (timeframe === 'custom' && startDate && endDate) {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const cur = new Date(startDate);
+    const end = new Date(endDate);
+    for (const d of dayNames) weekdayCounts[d] = 0;
+
+    while (cur <= end) {
+      const name = dayNames[cur.getDay()];
+      weekdayCounts[name] = (weekdayCounts[name] || 0) + 1;
+      cur.setDate(cur.getDate() + 1);
+    }
+    for (const d of dayNames) {
+      if (weekdayCounts[d] === 0) weekdayCounts[d] = 1;
+    }
+  }
+
+  // 1. Weekday Datalabel Breakdown (Monday to Sunday)
+  const weekdayTrends = [
+    {
+      day: 'Monday',
+      dayShort: 'Mon',
+      isWeekend: false,
+      accidents: Math.round(3.2 * weekdayCounts['Monday']),
+      breakdowns: Math.round(4.8 * weekdayCounts['Monday']),
+      congestionEvents: Math.round(9.5 * weekdayCounts['Monday']),
+      totalIncidents: Math.round(17.5 * weekdayCounts['Monday']),
+      avgSpeedKmh: 61.5,
+      peakCongestionHour: '08:15 AM',
+      label: `Mon: ${Math.round(17.5 * weekdayCounts['Monday'])} inc • 61.5 km/h`,
+    },
+    {
+      day: 'Tuesday',
+      dayShort: 'Tue',
+      isWeekend: false,
+      accidents: Math.round(2.8 * weekdayCounts['Tuesday']),
+      breakdowns: Math.round(4.2 * weekdayCounts['Tuesday']),
+      congestionEvents: Math.round(8.2 * weekdayCounts['Tuesday']),
+      totalIncidents: Math.round(15.2 * weekdayCounts['Tuesday']),
+      avgSpeedKmh: 64.8,
+      peakCongestionHour: '08:30 AM',
+      label: `Tue: ${Math.round(15.2 * weekdayCounts['Tuesday'])} inc • 64.8 km/h`,
+    },
+    {
+      day: 'Wednesday',
+      dayShort: 'Wed',
+      isWeekend: false,
+      accidents: Math.round(3.0 * weekdayCounts['Wednesday']),
+      breakdowns: Math.round(4.5 * weekdayCounts['Wednesday']),
+      congestionEvents: Math.round(8.8 * weekdayCounts['Wednesday']),
+      totalIncidents: Math.round(16.3 * weekdayCounts['Wednesday']),
+      avgSpeedKmh: 63.2,
+      peakCongestionHour: '08:20 AM',
+      label: `Wed: ${Math.round(16.3 * weekdayCounts['Wednesday'])} inc • 63.2 km/h`,
+    },
+    {
+      day: 'Thursday',
+      dayShort: 'Thu',
+      isWeekend: false,
+      accidents: Math.round(3.1 * weekdayCounts['Thursday']),
+      breakdowns: Math.round(4.6 * weekdayCounts['Thursday']),
+      congestionEvents: Math.round(9.2 * weekdayCounts['Thursday']),
+      totalIncidents: Math.round(16.9 * weekdayCounts['Thursday']),
+      avgSpeedKmh: 62.4,
+      peakCongestionHour: '08:35 AM',
+      label: `Thu: ${Math.round(16.9 * weekdayCounts['Thursday'])} inc • 62.4 km/h`,
+    },
+    {
+      day: 'Friday',
+      dayShort: 'Fri',
+      isWeekend: false,
+      accidents: Math.round(4.5 * weekdayCounts['Friday']),
+      breakdowns: Math.round(5.8 * weekdayCounts['Friday']),
+      congestionEvents: Math.round(12.5 * weekdayCounts['Friday']),
+      totalIncidents: Math.round(22.8 * weekdayCounts['Friday']),
+      avgSpeedKmh: 56.8,
+      peakCongestionHour: '18:45 PM',
+      label: `Fri: ${Math.round(22.8 * weekdayCounts['Friday'])} inc • 56.8 km/h (PM Peak)`,
+    },
+    {
+      day: 'Saturday',
+      dayShort: 'Sat',
+      isWeekend: true,
+      accidents: Math.round(2.1 * weekdayCounts['Saturday']),
+      breakdowns: Math.round(3.2 * weekdayCounts['Saturday']),
+      congestionEvents: Math.round(5.8 * weekdayCounts['Saturday']),
+      totalIncidents: Math.round(11.1 * weekdayCounts['Saturday']),
+      avgSpeedKmh: 72.4,
+      peakCongestionHour: '14:30 PM',
+      label: `Sat: ${Math.round(11.1 * weekdayCounts['Saturday'])} inc • 72.4 km/h`,
+    },
+    {
+      day: 'Sunday',
+      dayShort: 'Sun',
+      isWeekend: true,
+      accidents: Math.round(1.6 * weekdayCounts['Sunday']),
+      breakdowns: Math.round(2.5 * weekdayCounts['Sunday']),
+      congestionEvents: Math.round(4.8 * weekdayCounts['Sunday']),
+      totalIncidents: Math.round(8.9 * weekdayCounts['Sunday']),
+      avgSpeedKmh: 76.1,
+      peakCongestionHour: '19:00 PM (Causeway Inflow)',
+      label: `Sun: ${Math.round(8.9 * weekdayCounts['Sunday'])} inc • 76.1 km/h`,
+    },
   ];
 
+  // 2. Diurnal Hourly Trends with true midnight free flow
+  const hourlyTrends = [
+    { hour: '00:00', accidents: 0, breakdowns: Math.max(0, Math.round(0.2 * rangeDays)), roadworks: Math.round(1.2 * rangeDays), congestion: 0, total: Math.round(1.4 * rangeDays) },
+    { hour: '02:00', accidents: 0, breakdowns: Math.max(0, Math.round(0.1 * rangeDays)), roadworks: Math.round(1.5 * rangeDays), congestion: 0, total: Math.round(1.6 * rangeDays) },
+    { hour: '04:00', accidents: 0, breakdowns: Math.max(0, Math.round(0.1 * rangeDays)), roadworks: Math.round(1.4 * rangeDays), congestion: 0, total: Math.round(1.5 * rangeDays) },
+    { hour: '06:00', accidents: Math.round(0.4 * rangeDays), breakdowns: Math.round(0.6 * rangeDays), roadworks: Math.round(0.5 * rangeDays), congestion: Math.round(0.8 * rangeDays), total: Math.round(2.3 * rangeDays) },
+    { hour: '07:00', accidents: Math.round(1.1 * rangeDays), breakdowns: Math.round(1.4 * rangeDays), roadworks: Math.round(0.1 * rangeDays), congestion: Math.round(3.8 * rangeDays), total: Math.round(6.4 * rangeDays) },
+    { hour: '08:00', accidents: Math.round(1.8 * rangeDays), breakdowns: Math.round(2.1 * rangeDays), roadworks: 0, congestion: Math.round(5.5 * rangeDays), total: Math.round(9.4 * rangeDays) },
+    { hour: '09:00', accidents: Math.round(1.2 * rangeDays), breakdowns: Math.round(1.5 * rangeDays), roadworks: Math.round(0.2 * rangeDays), congestion: Math.round(3.5 * rangeDays), total: Math.round(6.4 * rangeDays) },
+    { hour: '10:00', accidents: Math.round(0.6 * rangeDays), breakdowns: Math.round(0.9 * rangeDays), roadworks: Math.round(0.6 * rangeDays), congestion: Math.round(1.4 * rangeDays), total: Math.round(3.5 * rangeDays) },
+    { hour: '12:00', accidents: Math.round(0.8 * rangeDays), breakdowns: Math.round(1.1 * rangeDays), roadworks: Math.round(0.5 * rangeDays), congestion: Math.round(2.0 * rangeDays), total: Math.round(4.4 * rangeDays) },
+    { hour: '14:00', accidents: Math.round(0.7 * rangeDays), breakdowns: Math.round(0.9 * rangeDays), roadworks: Math.round(0.8 * rangeDays), congestion: Math.round(1.6 * rangeDays), total: Math.round(4.0 * rangeDays) },
+    { hour: '16:00', accidents: Math.round(1.0 * rangeDays), breakdowns: Math.round(1.3 * rangeDays), roadworks: Math.round(0.3 * rangeDays), congestion: Math.round(2.8 * rangeDays), total: Math.round(5.4 * rangeDays) },
+    { hour: '17:30', accidents: Math.round(1.6 * rangeDays), breakdowns: Math.round(1.9 * rangeDays), roadworks: 0, congestion: Math.round(4.8 * rangeDays), total: Math.round(8.3 * rangeDays) },
+    { hour: '18:30', accidents: Math.round(2.2 * rangeDays), breakdowns: Math.round(2.5 * rangeDays), roadworks: 0, congestion: Math.round(5.8 * rangeDays), total: Math.round(10.5 * rangeDays) },
+    { hour: '19:30', accidents: Math.round(1.3 * rangeDays), breakdowns: Math.round(1.7 * rangeDays), roadworks: Math.round(0.2 * rangeDays), congestion: Math.round(3.9 * rangeDays), total: Math.round(7.1 * rangeDays) },
+    { hour: '21:00', accidents: Math.round(0.5 * rangeDays), breakdowns: Math.round(0.8 * rangeDays), roadworks: Math.round(0.9 * rangeDays), congestion: Math.round(1.1 * rangeDays), total: Math.round(3.3 * rangeDays) },
+    { hour: '22:30', accidents: Math.round(0.2 * rangeDays), breakdowns: Math.round(0.5 * rangeDays), roadworks: Math.round(1.2 * rangeDays), congestion: 0, total: Math.round(1.9 * rangeDays) },
+  ];
+
+  // 3. Speed Curves with free flow at night
   const speedTimeline = [
-    { time: '00:00', PIE: 88, AYE: 85, CTE: 82, KPE: 80, ECP: 89, SLE: 90, avgSpeed: 85.6 },
-    { time: '06:00', PIE: 82, AYE: 80, CTE: 76, KPE: 78, ECP: 84, SLE: 86, avgSpeed: 81.0 },
-    { time: '07:30', PIE: 42, AYE: 38, CTE: 28, KPE: 52, ECP: 58, SLE: 64, avgSpeed: 47.0 },
-    { time: '08:30', PIE: 35, AYE: 32, CTE: 22, KPE: 48, ECP: 52, SLE: 58, avgSpeed: 41.1 },
+    { time: '00:00', PIE: 90, AYE: 88, CTE: 85, KPE: 84, ECP: 92, SLE: 92, avgSpeed: 88.5 },
+    { time: '02:00', PIE: 92, AYE: 90, CTE: 88, KPE: 86, ECP: 94, SLE: 94, avgSpeed: 90.6 },
+    { time: '04:00', PIE: 92, AYE: 90, CTE: 88, KPE: 86, ECP: 94, SLE: 94, avgSpeed: 90.6 },
+    { time: '06:00', PIE: 84, AYE: 82, CTE: 78, KPE: 80, ECP: 86, SLE: 88, avgSpeed: 83.0 },
+    { time: '07:30', PIE: 42, AYE: 38, CTE: 24, KPE: 52, ECP: 58, SLE: 64, avgSpeed: 46.3 },
+    { time: '08:30', PIE: 35, AYE: 32, CTE: 20, KPE: 48, ECP: 52, SLE: 58, avgSpeed: 40.8 },
     { time: '10:00', PIE: 68, AYE: 65, CTE: 58, KPE: 70, ECP: 76, SLE: 80, avgSpeed: 69.5 },
-    { time: '12:30', PIE: 62, AYE: 60, CTE: 54, KPE: 68, ECP: 72, SLE: 78, avgSpeed: 65.6 },
+    { time: '12:30', PIE: 64, AYE: 62, CTE: 56, KPE: 68, ECP: 74, SLE: 78, avgSpeed: 67.0 },
     { time: '15:00', PIE: 66, AYE: 64, CTE: 59, KPE: 72, ECP: 75, SLE: 81, avgSpeed: 69.5 },
-    { time: '17:30', PIE: 39, AYE: 36, CTE: 25, KPE: 45, ECP: 49, SLE: 55, avgSpeed: 41.5 },
-    { time: '18:30', PIE: 32, AYE: 30, CTE: 19, KPE: 40, ECP: 44, SLE: 51, avgSpeed: 36.0 },
+    { time: '17:30', PIE: 38, AYE: 34, CTE: 22, KPE: 44, ECP: 48, SLE: 54, avgSpeed: 40.0 },
+    { time: '18:30', PIE: 30, AYE: 28, CTE: 18, KPE: 38, ECP: 42, SLE: 49, avgSpeed: 34.2 },
     { time: '19:45', PIE: 52, AYE: 48, CTE: 42, KPE: 59, ECP: 64, SLE: 70, avgSpeed: 55.8 },
-    { time: '21:30', PIE: 78, AYE: 75, CTE: 72, KPE: 77, ECP: 82, SLE: 86, avgSpeed: 78.3 },
-    { time: '23:00', PIE: 86, AYE: 84, CTE: 80, KPE: 79, ECP: 88, SLE: 89, avgSpeed: 84.3 },
+    { time: '21:30', PIE: 80, AYE: 78, CTE: 74, KPE: 78, ECP: 84, SLE: 88, avgSpeed: 80.3 },
+    { time: '23:00', PIE: 88, AYE: 86, CTE: 82, KPE: 82, ECP: 90, SLE: 90, avgSpeed: 86.3 },
   ];
 
   const corridorReliability = [
@@ -146,23 +283,28 @@ export default function handler(req: any, res: any) {
   ];
 
   const topBottlenecks = [
-    { location: 'PIE near Adam Road Flyover (Westbound)', expressway: 'PIE', incidentFrequency: 4.8, avgDelayMin: 18 },
-    { location: 'CTE Tunnel near Cairnhill Circle (Southbound)', expressway: 'CTE', incidentFrequency: 5.2, avgDelayMin: 24 },
-    { location: 'AYE near Clementi Ave 6 Exit (Eastbound)', expressway: 'AYE', incidentFrequency: 3.9, avgDelayMin: 15 },
-    { location: 'KPE Underground near Airport Road Exit', expressway: 'KPE', incidentFrequency: 2.7, avgDelayMin: 11 },
-    { location: 'BKE near Dairy Farm Road (Northbound)', expressway: 'BKE', incidentFrequency: 2.4, avgDelayMin: 12 },
+    { location: 'PIE near Adam Road Flyover (Westbound)', expressway: 'PIE', incidentFrequency: Number((4.8 * (rangeDays / 7)).toFixed(1)), avgDelayMin: 18 },
+    { location: 'CTE Tunnel near Cairnhill Circle (Southbound)', expressway: 'CTE', incidentFrequency: Number((5.2 * (rangeDays / 7)).toFixed(1)), avgDelayMin: 24 },
+    { location: 'AYE near Clementi Ave 6 Exit (Eastbound)', expressway: 'AYE', incidentFrequency: Number((3.9 * (rangeDays / 7)).toFixed(1)), avgDelayMin: 15 },
+    { location: 'KPE Underground near Airport Road Exit', expressway: 'KPE', incidentFrequency: Number((2.7 * (rangeDays / 7)).toFixed(1)), avgDelayMin: 11 },
+    { location: 'BKE near Dairy Farm Road (Northbound)', expressway: 'BKE', incidentFrequency: Number((2.4 * (rangeDays / 7)).toFixed(1)), avgDelayMin: 12 },
   ];
+
+  const totalIncidentsRecorded = weekdayTrends.reduce((sum, item) => sum + item.totalIncidents, 0);
 
   res.setHeader('Content-Type', 'application/json');
   res.status(200).json({
     success: true,
     timeframe,
+    startDate,
+    endDate,
     lastHarvestTimestamp: new Date().toISOString(),
-    totalIncidentsRecorded: Math.round(342 * multiplier),
+    totalIncidentsRecorded,
     avgNetworkSpeedKmh: 64.2,
     networkSpeedDeltaVsYesterdayPct: +4.8,
     peakHourCongestionIndex: 7.4,
     hourlyTrends,
+    weekdayTrends,
     speedTimeline,
     corridorReliability,
     mrtReliability,

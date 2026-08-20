@@ -6,6 +6,9 @@ import { Sidebar } from './components/Sidebar';
 import { TrafficIncidentsView } from './components/TrafficIncidentsView';
 import { MRTStatusView } from './components/MRTStatusView';
 import { HistoricalTrendsView } from './components/HistoricalTrendsView';
+import { CustomsCheckpointView } from './components/CustomsCheckpointView';
+import { BusArrivalView } from './components/BusArrivalView';
+import { TaxisParkingView } from './components/TaxisParkingView';
 import { NetworkMapModal } from './components/NetworkMapModal';
 import { LineDetailsModal } from './components/LineDetailsModal';
 import { ApiStatusModal } from './components/ApiStatusModal';
@@ -187,7 +190,7 @@ function TransportApp() {
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
-        {/* Dynamic View Mode: Traffic Incidents, MRT Status, or Historical Trends */}
+        {/* Dynamic View Mode: Traffic Incidents, Bus Arrivals, MRT Status, Taxis/Parking, JB/SG Customs, or Historical Trends */}
         <main className="flex-1 flex flex-col w-full">
           {currentView === 'traffic' ? (
             <TrafficIncidentsView
@@ -198,6 +201,8 @@ function TransportApp() {
               isRefreshing={isRefreshing}
               onNavigateToTrends={() => setCurrentView('trends')}
             />
+          ) : currentView === 'bus' ? (
+            <BusArrivalView />
           ) : currentView === 'mrt' ? (
             <MRTStatusView
               lines={lines}
@@ -205,6 +210,10 @@ function TransportApp() {
               onOpenNetworkMap={() => setIsNetworkMapOpen(true)}
               onSelectLineDetails={(line) => setSelectedLineForModal(line)}
             />
+          ) : currentView === 'taxis-parking' ? (
+            <TaxisParkingView />
+          ) : currentView === 'customs' ? (
+            <CustomsCheckpointView />
           ) : (
             <HistoricalTrendsView />
           )}

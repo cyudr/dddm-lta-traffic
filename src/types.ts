@@ -1,4 +1,4 @@
-export type ViewMode = 'traffic' | 'mrt' | 'trends';
+export type ViewMode = 'traffic' | 'bus' | 'mrt' | 'taxis-parking' | 'customs' | 'trends';
 
 export type IncidentType = 'accident' | 'roadworks' | 'congestion' | 'breakdown' | 'heavy_rain';
 
@@ -47,33 +47,46 @@ export interface MRTLineStatus {
   code: string;
   name: string;
   colorHex: string;
-  badgeBg: string;
-  badgeText: string;
-  borderClass: string;
+  badgeBg?: string;
+  badgeText?: string;
+  borderClass?: string;
   status: 'normal' | 'delay' | 'disrupted';
-  statusTitle: string;
+  statusTitle?: string;
+  statusText?: string;
   statusMessage?: string;
+  description?: string;
+  operatingHours?: string;
+  frequencyMin?: number;
   delayMinutes?: number;
+  delayDurationMin?: number;
   stationsCount: number;
-  peakFrequency: string;
-  offPeakFrequency: string;
-  firstTrain: string;
-  lastTrain: string;
-  stations?: { code: string; name: string; isInterchange?: boolean }[];
+  peakFrequency?: string;
+  offPeakFrequency?: string;
+  firstTrain?: string;
+  lastTrain?: string;
+  affectedStations?: string[];
+  interchanges?: string[];
+  stations?: ({ code: string; name: string; isInterchange?: boolean } | string)[];
   onTimeReliability?: number; // e.g. 99.8%
 }
 
 export interface ServiceAdvisory {
   id: string;
   lineCode: string;
-  lineColorBg: string;
-  timeFormatted: string;
-  iconType: 'campaign' | 'info' | 'warning';
-  iconColor: string;
+  lineName?: string;
+  lineColorBg?: string;
+  timeFormatted?: string;
+  timestamp?: string;
+  iconType?: 'campaign' | 'info' | 'warning';
+  iconColor?: string;
   title: string;
-  message: string;
+  message?: string;
+  description?: string;
   affectedStations?: string;
+  affectedSegments?: string;
   alternativeTransport?: string;
+  actionAdvice?: string;
+  isMajor?: boolean;
 }
 
 export interface TrafficCamera {
@@ -89,11 +102,145 @@ export interface TrafficCamera {
   lngPercent?: number;
   isOnline?: boolean;
   status?: string;
+  direction?: 'towards_jb' | 'towards_sg' | 'towards_changi' | 'towards_city' | 'towards_tuas' | string;
+  locationNote?: string;
 }
 
+// ----------------------------------------------------
+// LTA DataMall Bus Services & Arrivals Types
+// ----------------------------------------------------
+export type BusLoadLevel = 'SEA' | 'SDA' | 'LSD'; // Seats Available, Standing Available, Limited Standing
+export type BusFeature = 'WAB' | ''; // Wheelchair Accessible Bus
+export type BusVehicleType = 'SD' | 'DD' | 'BD'; // Single Deck, Double Deck, Bendy
+
+export interface NextBusArrival {
+  originCode: string;
+  destinationCode: string;
+  estimatedArrival: string; // ISO string
+  minutesUntilArrival: number;
+  latitude?: number;
+  longitude?: number;
+  visitNumber: number;
+  load: BusLoadLevel;
+  feature: BusFeature;
+  type: BusVehicleType;
+}
+
+export interface BusServiceArrivalInfo {
+  serviceNo: string;
+  operator: 'SBST' | 'SMRT' | 'TTS' | 'GAS' | string;
+  nextBus?: NextBusArrival;
+  nextBus2?: NextBusArrival;
+  nextBus3?: NextBusArrival;
+}
+
+export interface BusStopItem {
+  busStopCode: string;
+  roadName: string;
+  description: string;
+  latitude: number;
+  longitude: number;
+  distanceKm?: number;
+}
+
+// ----------------------------------------------------
+// LTA DataMall Platform Crowd Density (PCD) Types
+// ----------------------------------------------------
+export type MRTCrowdLevel = 'l' | 'm' | 'h' | 'na'; // low, moderate, high
+
+export interface StationCrowdDensity {
+  station: string; // e.g. "NS1", "EW24"
+  stationName?: string;
+  line: string; // "NSL", "EWL", "NEL", "CCL", "DTL", "TEL"
+  startTime: string;
+  endTime: string;
+  crowdLevel: MRTCrowdLevel;
+}
+
+// ----------------------------------------------------
+// LTA DataMall Taxi Availability & Taxi Stands
+// ----------------------------------------------------
+export interface TaxiLocation {
+  latitude: number;
+  longitude: number;
+}
+
+export interface TaxiStandItem {
+  taxiCode: string;
+  latitude: number;
+  longitude: number;
+  bfa: 'Yes' | 'No' | string; // Barrier Free Access
+  ownership: string;
+  type: string; // "Stand", "Stop"
+  name: string;
+}
+
+// ----------------------------------------------------
+// LTA DataMall Carpark & Bicycle Parking Types
+// ----------------------------------------------------
+export interface CarparkAvailabilityItem {
+  carParkID: string;
+  area: string;
+  development: string;
+  location: string;
+  availableLots: number;
+  lotType: string; // "C" (Car), "H" (Heavy), "M" (Motorcycle)
+  agency: 'HDB' | 'LTA' | 'URA' | string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface BicycleParkingItem {
+  description: string;
+  latitude: number;
+  longitude: number;
+  rackType: 'MRT_RACKS' | 'HDB_RACKS' | 'NLB_RACKS' | 'PARKS_RACKS' | string;
+  rackCount: number;
+  shelterIndicator: 'Y' | 'N' | string;
+}
+
+// ----------------------------------------------------
+// LTA DataMall Road Openings & Utility Works
+// ----------------------------------------------------
+export interface RoadOpeningItem {
+  eventId: string;
+  startDate: string;
+  endDate: string;
+  svcDept: string; // "PUB", "SP POWERGRID", "SINGTEL", "PRIVATE", "LTA"
+  roadName: string;
+  other: string; // Contact phone / details
+}
+
+// ----------------------------------------------------
+// LTA DataMall Mobility Datasets Types
+// ----------------------------------------------------
+export interface MobilityDatasetItem {
+  id: string;
+  title: string;
+  category: 'Passenger Volume' | 'Origin-Destination' | 'Traffic Flow';
+  period: string;
+  downloadLink: string;
+  description: string;
+}
+
+// ----------------------------------------------------
 // Historical Trends & Analytics Types
+// ----------------------------------------------------
+export interface WeekdayTrendMetric {
+  day: string;
+  dayShort: string;
+  isWeekend: boolean;
+  accidents: number;
+  breakdowns: number;
+  congestionEvents: number;
+  totalIncidents: number;
+  avgSpeedKmh: number;
+  peakCongestionHour: string;
+  label: string;
+}
+
 export interface HourlyIncidentTrend {
-  hour: string; // '00:00', '02:00', etc.
+  hour: string;
   accidents: number;
   breakdowns: number;
   roadworks: number;
@@ -102,7 +249,7 @@ export interface HourlyIncidentTrend {
 }
 
 export interface ExpresswaySpeedTrendPoint {
-  time: string; // '06:00', '07:30', etc.
+  time: string;
   PIE: number;
   AYE: number;
   CTE: number;
@@ -119,13 +266,13 @@ export interface CorridorReliabilityMetric {
   varianceMinutes: number;
   status: 'On Time' | 'Moderate Delay' | 'Heavy Delay';
   peakHourTrend: 'Improving' | 'Worsening' | 'Stable';
-  reliabilityScore: number; // percentage, e.g. 94%
+  reliabilityScore: number;
 }
 
 export interface MRTReliabilityTrend {
   line: string;
   code: string;
-  mkbfKm: number; // Mean Kilometres Between Failures in thousands (e.g. 2100k km)
+  mkbfKm: number;
   punctualityPct: number;
   majorDelaysThisMonth: number;
   morningPeakCrowdPct: number;
@@ -133,15 +280,59 @@ export interface MRTReliabilityTrend {
 }
 
 export interface HistoricalTrendsData {
-  timeframe: '24h' | '7d' | '30d';
+  timeframe: '24h' | '7d' | '30d' | 'custom';
+  startDate?: string;
+  endDate?: string;
   lastHarvestTimestamp: string;
   totalIncidentsRecorded: number;
   avgNetworkSpeedKmh: number;
   networkSpeedDeltaVsYesterdayPct: number;
   peakHourCongestionIndex: number;
   hourlyTrends: HourlyIncidentTrend[];
+  weekdayTrends: WeekdayTrendMetric[];
   speedTimeline: ExpresswaySpeedTrendPoint[];
   corridorReliability: CorridorReliabilityMetric[];
   mrtReliability: MRTReliabilityTrend[];
   topBottlenecks: { location: string; expressway: string; incidentFrequency: number; avgDelayMin: number }[];
 }
+
+// ----------------------------------------------------
+// Johor Bahru / Singapore Cross-Border Customs Types
+// ----------------------------------------------------
+export interface CheckpointDirectionStatus {
+  travelTimeMin: number;
+  baselineTimeMin: number;
+  delayMinutes: number;
+  status: 'smooth' | 'moderate' | 'heavy' | 'standstill' | 'congested';
+  statusText: string;
+  speedKmh: number;
+  queueLengthKm: number;
+  carLanesOpen: number;
+  motorcycleLanesOpen: number;
+}
+
+export interface CheckpointHourlyForecast {
+  hour: string;
+  toJBMin: number;
+  toSGMin: number;
+  isPeak: boolean;
+}
+
+export interface CustomsCheckpointData {
+  id: 'woodlands' | 'tuas';
+  name: string;
+  alias: string;
+  approachRoad: string;
+  malaysiaCheckpoint: string;
+  coordinates: { lat: number; lng: number };
+  singaporeToJB: CheckpointDirectionStatus;
+  jbToSingapore: CheckpointDirectionStatus;
+  qrClearanceActive: boolean;
+  eGatesStatus: string;
+  lastUpdated: string;
+  bestTimeToCross: string;
+  cameras: TrafficCamera[];
+  hourlyWaitForecast: CheckpointHourlyForecast[];
+  advisories: string[];
+}
+
