@@ -46,7 +46,7 @@ const STATIONS_DATA: StationInfo[] = [
   { id: 'NS17-CC15', name: 'Bishan', lines: ['NS', 'CC'], x: 530, y: 280, isInterchange: true, firstTrain: '05:32 AM', lastTrain: '11:45 PM', crowdLevel: 'High' },
   { id: 'NS21-DT11', name: 'Newton', lines: ['NS', 'DT'], x: 510, y: 400, isInterchange: true, firstTrain: '05:38 AM', lastTrain: '11:58 PM', crowdLevel: 'Moderate' },
   { id: 'NS22-TE14', name: 'Orchard', lines: ['NS', 'TE'], x: 500, y: 435, isInterchange: true, firstTrain: '05:40 AM', lastTrain: '11:55 PM', crowdLevel: 'High' },
-  { id: 'NS24-NE6-CC1', name: 'Dhoby Ghaut', lines: ['NS', 'NE', 'CC'], x: 550, y: 455, isInterchange: true, statusAlert: 'Train fault delay at Platform B (+8 mins)', firstTrain: '05:37 AM', lastTrain: '11:55 PM', crowdLevel: 'High' },
+  { id: 'NS24-NE6-CC1', name: 'Dhoby Ghaut', lines: ['NS', 'NE', 'CC'], x: 550, y: 455, isInterchange: true, firstTrain: '05:37 AM', lastTrain: '11:55 PM', crowdLevel: 'Moderate' },
   { id: 'NS25-EW13', name: 'City Hall', lines: ['NS', 'EW'], x: 570, y: 490, isInterchange: true, firstTrain: '05:41 AM', lastTrain: '11:58 PM', crowdLevel: 'Moderate' },
   { id: 'NS26-EW14', name: 'Raffles Place', lines: ['NS', 'EW'], x: 570, y: 525, isInterchange: true, firstTrain: '05:38 AM', lastTrain: '11:55 PM', crowdLevel: 'Moderate' },
   { id: 'NS27-CC2-TE20', name: 'Marina Bay', lines: ['NS', 'CC', 'TE'], x: 590, y: 565, isInterchange: true, firstTrain: '05:42 AM', lastTrain: '11:52 PM', crowdLevel: 'Low' },
@@ -251,21 +251,26 @@ export const LTAMRTSystemMap: React.FC<LTAMRTSystemMapProps> = ({
             <span>Interchange Hub</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ba1a1a] inline-block animate-ping"></span>
-            <span>Live Alert</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#004481] inline-block"></span>
+            <span>Regular Station</span>
           </div>
         </div>
       </div>
 
       {/* 3. Interactive SVG Transit Network Canvas */}
-      <div className="flex-1 overflow-auto bg-[#fafafa] relative p-4 flex items-center justify-center">
+      <div className="flex-1 overflow-auto bg-[#fafafa] relative p-2 md:p-4 flex items-center justify-center min-h-[440px]">
         <div
-          className="transition-transform duration-200 origin-center cursor-grab active:cursor-grabbing"
-          style={{ transform: `scale(${zoom})`, minWidth: '1020px', height: '650px' }}
+          className="transition-transform duration-200 origin-center cursor-grab active:cursor-grabbing w-full max-w-full flex items-center justify-center"
+          style={{
+            transform: zoom !== 1 ? `scale(${zoom})` : undefined,
+            width: zoom > 1 ? `${zoom * 100}%` : '100%',
+            maxWidth: zoom > 1 ? 'none' : '100%',
+          }}
         >
           <svg
             viewBox="0 0 1020 650"
-            className="w-[1020px] h-[650px] select-none"
+            className="w-full h-auto max-h-[580px] select-none"
+            preserveAspectRatio="xMidYMid meet"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
             {/* Defs for gradients and shadow markers */}
@@ -487,7 +492,7 @@ export const LTAMRTSystemMap: React.FC<LTAMRTSystemMapProps> = ({
                   className="cursor-pointer group"
                   onClick={() => setSelectedStation(st)}
                 >
-                  {/* Alert Pulse Glow if disrupted */}
+                  {/* Alert ring if station has alert */}
                   {hasAlert && (
                     <circle
                       cx={st.x}
@@ -496,8 +501,6 @@ export const LTAMRTSystemMap: React.FC<LTAMRTSystemMapProps> = ({
                       fill="none"
                       stroke="#ba1a1a"
                       strokeWidth="2.5"
-                      strokeDasharray="4,4"
-                      className="animate-spin origin-center"
                     />
                   )}
 

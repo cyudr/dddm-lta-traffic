@@ -96,34 +96,47 @@ export const LineDetailsModal: React.FC<LineDetailsModalProps> = ({ line, onClos
               style={{ backgroundColor: line.colorHex }}
             />
 
-            {line.stations?.map((station, idx) => (
-              <div key={station.code} className="relative flex items-center justify-between group">
-                {/* Station dot */}
-                <div
-                  className={`absolute -left-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-xs z-10 ${
-                    station.isInterchange ? 'ring-2 ring-[#191c1d] bg-white' : ''
-                  }`}
-                  style={{
-                    backgroundColor: station.isInterchange ? 'white' : line.colorHex,
-                  }}
-                />
+            {line.stations?.map((stationItem, idx) => {
+              const code =
+                typeof stationItem === 'string'
+                  ? `${line.code}${idx + 1}`
+                  : stationItem.code || `${line.code}${idx + 1}`;
+              const name =
+                typeof stationItem === 'string'
+                  ? stationItem
+                  : stationItem.name || 'Station';
+              const isInterchange =
+                typeof stationItem === 'object' && !!stationItem.isInterchange;
 
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-[12px] font-bold text-[#727783] w-12">
-                    {station.code}
-                  </span>
-                  <span className="text-[14px] font-medium text-[#191c1d] group-hover:text-[#004481]">
-                    {station.name}
-                  </span>
+              return (
+                <div key={`${code}-${idx}`} className="relative flex items-center justify-between group py-0.5">
+                  {/* Station dot */}
+                  <div
+                    className={`absolute -left-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-xs z-10 ${
+                      isInterchange ? 'ring-2 ring-[#191c1d] bg-white' : ''
+                    }`}
+                    style={{
+                      backgroundColor: isInterchange ? 'white' : line.colorHex,
+                    }}
+                  />
+
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[12px] font-bold text-[#727783] w-14">
+                      {code}
+                    </span>
+                    <span className="text-[14px] font-semibold text-[#191c1d] group-hover:text-[#004481] transition-colors">
+                      {name}
+                    </span>
+                  </div>
+
+                  {isInterchange && (
+                    <span className="text-[10px] font-bold text-[#004481] bg-[#d5e3ff] px-2 py-0.5 rounded tracking-wide">
+                      INTERCHANGE
+                    </span>
+                  )}
                 </div>
-
-                {station.isInterchange && (
-                  <span className="text-[10px] font-bold text-[#004481] bg-[#d5e3ff] px-2 py-0.5 rounded">
-                    INTERCHANGE
-                  </span>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

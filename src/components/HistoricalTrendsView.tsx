@@ -6,14 +6,13 @@ import {
   Train,
   Activity,
   ArrowUpRight,
-  ArrowDownRight,
   RefreshCw,
   CheckCircle2,
   ShieldAlert,
   Calendar,
   Layers,
-  ChevronRight,
-  Sparkles
+  Filter,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -45,9 +44,15 @@ export const HistoricalTrendsView: React.FC = () => {
   });
   const [endDate, setEndDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
-  const [data, setData] = useState<HistoricalTrendsData>(() => getHistoricalTrendsFallbackData('7d', startDate, endDate));
+  // Sub-filters that apply to all charts & analytics
+  const [dayType, setDayType] = useState<'ALL' | 'WEEKDAYS' | 'WEEKENDS'>('ALL');
+  const [incidentType, setIncidentType] = useState<'ALL' | 'ACCIDENTS' | 'BREAKDOWNS' | 'CONGESTION' | 'ROADWORKS'>('ALL');
+  const [selectedExpressway, setSelectedExpressway] = useState<string>('ALL');
+
+  const [data, setData] = useState<HistoricalTrendsData>(() =>
+    getHistoricalTrendsFallbackData('7d', startDate, endDate, { dayType: 'ALL', incidentType: 'ALL', expressway: 'ALL' })
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [activeSpeedMetric, setActiveSpeedMetric] = useState<string>('ALL');
   const [dataSourceNotice, setDataSourceNotice] = useState<string>('LTA Historical Timeseries Model');
 
   const handlePresetChange = (tf: '24h' | '7d' | '30d' | 'custom') => {
@@ -84,49 +89,66 @@ export const HistoricalTrendsView: React.FC = () => {
   const fetchTrends = async (
     selectedTf: '24h' | '7d' | '30d' | 'custom',
     sDate: string,
-    eDate: string
+    eDate: string,
+    filters: {
+      dayType: 'ALL' | 'WEEKDAYS' | 'WEEKENDS';
+      incidentType: 'ALL' | 'ACCIDENTS' | 'BREAKDOWNS' | 'CONGESTION' | 'ROADWORKS';
+      expressway: string;
+    }
   ) => {
     setIsLoading(true);
     try {
-      const url = `/api/historical-trends?timeframe=${selectedTf}&startDate=${sDate}&endDate=${eDate}`;
-      const res = await fetch(url);
+      const queryParams = new URLSearchParams({
+        timeframe: selectedTf,
+        startDate: sDate,
+        endDate: eDate,
+        dayType: filters.dayType,
+        incidentType: filters.incidentType,
+        expressway: filters.expressway,
+      });
+
+      const res = await fetch(`/api/historical-trends?${queryParams.toString()}`);
       const contentType = res.headers.get('content-type') || '';
 
       if (res.ok && contentType.includes('application/json')) {
         const json = await res.json();
         if (json && json.hourlyTrends && json.hourlyTrends.length > 0) {
           setData(json);
-          setDataSourceNotice('LTA DataMall Historical Timeseries Engine (Real-Time Live Ingestion)');
+          setDataSourceNotice('LTA DataMall Timeseries Engine (Real-Time Ingestion)');
           setIsLoading(false);
           return;
         }
       }
 
-      // Fallback generator for edge & Vercel deployment
-      const fallback = getHistoricalTrendsFallbackData(selectedTf, sDate, eDate);
+      // Dynamic fallback generator
+      const fallback = getHistoricalTrendsFallbackData(selectedTf, sDate, eDate, filters);
       setData(fallback);
-      setDataSourceNotice('LTA Diurnal Transport Baseline Model (Vercel Edge Ready)');
+      setDataSourceNotice('LTA Transport Baseline Diurnal Model (Dynamic Mode)');
     } catch (err) {
-      console.warn('Backend API unreachable, using resilient LTA fallback trend model:', err);
-      const fallback = getHistoricalTrendsFallbackData(selectedTf, sDate, eDate);
+      console.warn('Backend API unreachable, using dynamic LTA baseline model:', err);
+      const fallback = getHistoricalTrendsFallbackData(selectedTf, sDate, eDate, filters);
       setData(fallback);
-      setDataSourceNotice('LTA Diurnal Transport Baseline Model (Vercel Edge Ready)');
+      setDataSourceNotice('LTA Transport Baseline Diurnal Model (Dynamic Mode)');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTrends(timeframe, startDate, endDate);
-  }, [timeframe, startDate, endDate]);
+    fetchTrends(timeframe, startDate, endDate, {
+      dayType,
+      incidentType,
+      expressway: selectedExpressway,
+    });
+  }, [timeframe, startDate, endDate, dayType, incidentType, selectedExpressway]);
 
   return (
-    <div className="flex-1 md:mr-72 flex flex-col bg-[#f8f9fa] min-h-[calc(100vh-64px)] pb-24">
-      {/* 1. Header Toolbar with Date Range Selection */}
+    <div id="historical-trends-view-container" className="flex-1 md:mr-72 flex flex-col bg-[#f8f9fa] min-h-[calc(100vh-64px)] pb-24">
+      {/* 1. Header Toolbar with Date Range Selection & Model Status */}
       <div className="bg-white border-b border-[#e1e3e4] px-4 md:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sticky top-16 z-20 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#004481] text-white rounded-lg">
+            <div className="p-2 bg-[#004481] text-white rounded-lg shadow-2xs">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
@@ -150,6 +172,7 @@ export const HistoricalTrendsView: React.FC = () => {
             {(['24h', '7d', '30d', 'custom'] as const).map((tf) => (
               <button
                 key={tf}
+                id={`btn-timeframe-${tf}`}
                 onClick={() => handlePresetChange(tf)}
                 className={`px-3 py-1.5 rounded-md text-[12px] font-bold transition-all cursor-pointer ${
                   timeframe === tf
@@ -173,6 +196,7 @@ export const HistoricalTrendsView: React.FC = () => {
             <div className="flex items-center gap-1.5 bg-white border border-[#c1c6d3] p-1 rounded-lg text-[12px] shadow-2xs">
               <Calendar className="w-3.5 h-3.5 text-[#004481] ml-1" />
               <input
+                id="input-trend-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -180,6 +204,7 @@ export const HistoricalTrendsView: React.FC = () => {
               />
               <span className="text-[#727783] font-bold">to</span>
               <input
+                id="input-trend-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -192,22 +217,116 @@ export const HistoricalTrendsView: React.FC = () => {
           )}
 
           <button
-            onClick={() => fetchTrends(timeframe, startDate, endDate)}
+            id="btn-refresh-trends"
+            onClick={() =>
+              fetchTrends(timeframe, startDate, endDate, {
+                dayType,
+                incidentType,
+                expressway: selectedExpressway,
+              })
+            }
             className="p-2 bg-white hover:bg-gray-100 border border-[#d1d5db] rounded-lg text-gray-700 transition-colors cursor-pointer shadow-2xs"
-            title="Refresh Trend Model"
+            title="Refresh Trend Analytics"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* 2. Main Content Dashboard */}
+      {/* 2. Secondary Filter Bar: Day Type, Incident Type, and Corridor */}
+      <div className="bg-white border-b border-[#e1e3e4] px-4 md:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-[12px]">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Day Type Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#727783] font-semibold flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#004481]" />
+              Day:
+            </span>
+            <div className="flex bg-[#f3f4f5] p-0.5 rounded-lg border border-[#e1e3e4]">
+              {(['ALL', 'WEEKDAYS', 'WEEKENDS'] as const).map((dt) => (
+                <button
+                  key={dt}
+                  id={`btn-daytype-${dt.toLowerCase()}`}
+                  onClick={() => setDayType(dt)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+                    dayType === dt
+                      ? 'bg-[#004481] text-white shadow-xs'
+                      : 'text-[#414751] hover:text-[#191c1d]'
+                  }`}
+                >
+                  {dt === 'ALL' ? 'All (Mon-Sun)' : dt === 'WEEKDAYS' ? 'Weekdays Only' : 'Weekends Only'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Incident Type Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#727783] font-semibold flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5 text-[#004481]" />
+              Incident:
+            </span>
+            <div className="flex bg-[#f3f4f5] p-0.5 rounded-lg border border-[#e1e3e4] overflow-x-auto">
+              {[
+                { id: 'ALL', label: 'All Types' },
+                { id: 'ACCIDENTS', label: 'Accidents' },
+                { id: 'BREAKDOWNS', label: 'Breakdowns' },
+                { id: 'CONGESTION', label: 'Congestion' },
+                { id: 'ROADWORKS', label: 'Roadworks' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  id={`btn-inctype-${item.id.toLowerCase()}`}
+                  onClick={() => setIncidentType(item.id as any)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap cursor-pointer transition-all ${
+                    incidentType === item.id
+                      ? 'bg-[#004481] text-white shadow-xs'
+                      : 'text-[#414751] hover:text-[#191c1d]'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Corridor / Expressway Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#727783] font-semibold flex items-center gap-1">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#004481]" />
+              Corridor:
+            </span>
+            <div className="flex bg-[#f3f4f5] p-0.5 rounded-lg border border-[#e1e3e4] overflow-x-auto">
+              {['ALL', 'PIE', 'AYE', 'CTE', 'KPE', 'ECP', 'SLE', 'BKE'].map((exp) => (
+                <button
+                  key={exp}
+                  id={`btn-exp-${exp.toLowerCase()}`}
+                  onClick={() => setSelectedExpressway(exp)}
+                  className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+                    selectedExpressway === exp
+                      ? 'bg-[#004481] text-white shadow-xs'
+                      : 'text-[#414751] hover:text-[#191c1d]'
+                  }`}
+                >
+                  {exp}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-[11px] font-medium text-[#727783] hidden xl:block">
+          Active Filter: <span className="font-bold text-[#004481]">{dayType}</span> • <span className="font-bold text-[#004481]">{incidentType}</span> • <span className="font-bold text-[#004481]">{selectedExpressway}</span> ({selectedDaysCount} Days Sampled)
+        </div>
+      </div>
+
+      {/* 3. Main Content Dashboard */}
       <div className="p-4 md:p-6 max-w-7xl w-full mx-auto space-y-6">
         {/* KPI Summaries */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
+          <div id="kpi-avg-speed" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
-              <span className="text-[12px] font-bold uppercase tracking-wider">Avg Expressway Speed</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider">Avg Network Speed</span>
               <Car className="w-4 h-4 text-[#004481]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -220,9 +339,9 @@ export const HistoricalTrendsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
+          <div id="kpi-total-incidents" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
-              <span className="text-[12px] font-bold uppercase tracking-wider">Total Recorded Incidents</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider">Filter Incident Count</span>
               <Activity className="w-4 h-4 text-[#004481]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -231,11 +350,11 @@ export const HistoricalTrendsView: React.FC = () => {
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[12px] text-emerald-700 font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Monitored across 10 Expressways</span>
+              <span>{selectedDaysCount} Days • {selectedExpressway === 'ALL' ? 'All Expressways' : selectedExpressway}</span>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
+          <div id="kpi-rail-punctuality" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
               <span className="text-[12px] font-bold uppercase tracking-wider">Rail System Punctuality</span>
               <Train className="w-4 h-4 text-[#004481]" />
@@ -249,33 +368,35 @@ export const HistoricalTrendsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
+          <div id="kpi-delay-multiplier" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
             <div className="flex justify-between items-start text-[#727783]">
-              <span className="text-[12px] font-bold uppercase tracking-wider">Peak Hour Delay Index</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider">Peak Hour Congestion Index</span>
               <Clock className="w-4 h-4 text-[#004481]" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-[28px] font-bold text-amber-700 font-mono">1.38x</span>
-              <span className="text-[12px] text-[#727783]">multiplier</span>
+              <span className="text-[28px] font-bold text-amber-700 font-mono">
+                {data.peakHourCongestionIndex ? `${data.peakHourCongestionIndex}x` : '1.38x'}
+              </span>
+              <span className="text-[12px] text-[#727783]">surge index</span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-700 font-semibold">
-              <span>Friday Evening: Heaviest Surge</span>
+              <span>{dayType === 'WEEKENDS' ? 'Weekend Flow: Light Traffic' : 'Friday Evening: Heaviest Surge'}</span>
             </div>
           </div>
         </div>
 
         {/* 1. WEEKDAY BREAKDOWN WITH EXPLICIT DATA LABELS (Monday to Sunday) */}
-        <div className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
+        <div id="section-weekday-trends" className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e1e3e4] pb-3">
             <div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-[#004481]" />
                 <h3 className="text-[17px] font-bold text-[#191c1d]">
-                  Incident Volume & Velocity Breakdown by Day of the Week
+                  Incident Volume & Velocity Breakdown by Day of Week
                 </h3>
               </div>
               <p className="text-[12px] text-[#727783] mt-0.5">
-                Explicit data labels by weekday displaying total incidents, peak hours, and average velocity.
+                Dynamic counts calibrated for {selectedDaysCount} days ({startDate} to {endDate}), filtered by {dayType.toLowerCase()} and {incidentType.toLowerCase()}.
               </p>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-medium text-[#414751]">
@@ -368,14 +489,14 @@ export const HistoricalTrendsView: React.FC = () => {
         </div>
 
         {/* 2. Diurnal Hourly Distribution Area Chart */}
-        <div className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
+        <div id="section-hourly-trends" className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e1e3e4] pb-3">
             <div>
               <h3 className="text-[17px] font-bold text-[#191c1d]">
-                Hourly Diurnal Incident Profile ({timeframe === '24h' ? '24 Hours' : timeframe === '7d' ? 'Past 7 Days' : timeframe === '30d' ? 'Past 30 Days' : `${startDate} to ${endDate}`})
+                Hourly Diurnal Incident Distribution ({timeframe === '24h' ? '24 Hours' : timeframe === '7d' ? 'Past 7 Days' : timeframe === '30d' ? 'Past 30 Days' : `${startDate} to ${endDate}`})
               </h3>
               <p className="text-[12px] text-[#727783]">
-                Cumulative breakdown of accidents, breakdowns, congestion, and roadworks by hour of day.
+                Cumulative breakdown by hour across {selectedDaysCount} sampled days for {dayType.toLowerCase()}.
               </p>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-medium text-[#414751] flex-wrap">
@@ -464,23 +585,23 @@ export const HistoricalTrendsView: React.FC = () => {
         </div>
 
         {/* 3. Expressway Velocity Curves */}
-        <div className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
+        <div id="section-speed-timeline" className="bg-white p-5 md:p-6 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e1e3e4] pb-3">
             <div>
               <h3 className="text-[17px] font-bold text-[#191c1d]">
-                Expressway Speed Velocity Trajectories (km/h)
+                Expressway Velocity Trajectories (km/h)
               </h3>
               <p className="text-[12px] text-[#727783]">
-                Diurnal velocity profile across key Singapore expressway corridors.
+                Diurnal speed curves dynamically adjusted for {dayType.toLowerCase()} schedule.
               </p>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
               {['ALL', 'PIE', 'AYE', 'CTE', 'KPE', 'ECP'].map((exp) => (
                 <button
                   key={exp}
-                  onClick={() => setActiveSpeedMetric(exp)}
+                  onClick={() => setSelectedExpressway(exp)}
                   className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
-                    activeSpeedMetric === exp
+                    selectedExpressway === exp
                       ? 'bg-[#004481] text-white'
                       : 'bg-[#edeeef] text-[#414751] hover:bg-[#e1e3e4]'
                   }`}
@@ -506,19 +627,19 @@ export const HistoricalTrendsView: React.FC = () => {
                   }}
                 />
                 <Legend />
-                {(activeSpeedMetric === 'ALL' || activeSpeedMetric === 'PIE') && (
+                {(selectedExpressway === 'ALL' || selectedExpressway === 'PIE') && (
                   <Line type="monotone" dataKey="PIE" stroke="#009645" strokeWidth={2.5} dot={false} name="PIE (km/h)" />
                 )}
-                {(activeSpeedMetric === 'ALL' || activeSpeedMetric === 'AYE') && (
+                {(selectedExpressway === 'ALL' || selectedExpressway === 'AYE') && (
                   <Line type="monotone" dataKey="AYE" stroke="#d42e12" strokeWidth={2.5} dot={false} name="AYE (km/h)" />
                 )}
-                {(activeSpeedMetric === 'ALL' || activeSpeedMetric === 'CTE') && (
+                {(selectedExpressway === 'ALL' || selectedExpressway === 'CTE') && (
                   <Line type="monotone" dataKey="CTE" stroke="#fa9e0d" strokeWidth={3} dot={false} name="CTE (km/h)" />
                 )}
-                {(activeSpeedMetric === 'ALL' || activeSpeedMetric === 'KPE') && (
+                {(selectedExpressway === 'ALL' || selectedExpressway === 'KPE') && (
                   <Line type="monotone" dataKey="KPE" stroke="#732282" strokeWidth={2} dot={false} name="KPE (km/h)" />
                 )}
-                {(activeSpeedMetric === 'ALL' || activeSpeedMetric === 'ECP') && (
+                {(selectedExpressway === 'ALL' || selectedExpressway === 'ECP') && (
                   <Line type="monotone" dataKey="ECP" stroke="#005ec4" strokeWidth={2} dot={false} name="ECP (km/h)" />
                 )}
               </LineChart>
@@ -529,58 +650,67 @@ export const HistoricalTrendsView: React.FC = () => {
         {/* 4. Grid: Corridor Travel Time Variance & SMRT/SBS Rail Reliability */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Corridor Travel Time Reliability */}
-          <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-3">
-            <h3 className="text-[17px] font-bold text-[#191c1d] border-b border-[#e1e3e4] pb-2">
-              Corridor Travel Time Reliability Index
-            </h3>
+          <div id="section-corridor-reliability" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-3">
+            <div className="flex justify-between items-center border-b border-[#e1e3e4] pb-2">
+              <h3 className="text-[17px] font-bold text-[#191c1d]">
+                Corridor Travel Time Reliability Index
+              </h3>
+              <span className="text-[11px] text-[#727783] font-medium">
+                {selectedExpressway === 'ALL' ? 'All Corridors' : `Filtered: ${selectedExpressway}`}
+              </span>
+            </div>
             <div className="divide-y divide-[#edeeef]">
-              {data.corridorReliability.map((corridor, idx) => (
-                <div key={idx} className="py-3 first:pt-1 last:pb-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-[13px] font-bold text-[#191c1d]">{corridor.corridor}</h4>
-                      <div className="flex items-center gap-2 text-[11px] text-[#727783] mt-0.5">
-                        <span>Current: <strong>{corridor.currentTravelTimeMin}m</strong></span>
-                        <span>•</span>
-                        <span>Baseline: {corridor.baselineTravelTimeMin}m</span>
-                        <span>•</span>
-                        <span className={corridor.varianceMinutes > 10 ? 'text-red-600 font-bold' : 'text-emerald-600'}>
-                          +{corridor.varianceMinutes}m variance
-                        </span>
+              {data.corridorReliability.length === 0 ? (
+                <p className="text-[12px] text-[#727783] py-4 text-center">No corridors matching selected filter.</p>
+              ) : (
+                data.corridorReliability.map((corridor, idx) => (
+                  <div key={idx} className="py-3 first:pt-1 last:pb-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-[#191c1d]">{corridor.corridor}</h4>
+                        <div className="flex items-center gap-2 text-[11px] text-[#727783] mt-0.5">
+                          <span>Current: <strong>{corridor.currentTravelTimeMin}m</strong></span>
+                          <span>•</span>
+                          <span>Baseline: {corridor.baselineTravelTimeMin}m</span>
+                          <span>•</span>
+                          <span className={corridor.varianceMinutes > 10 ? 'text-red-600 font-bold' : 'text-emerald-600'}>
+                            +{corridor.varianceMinutes}m variance
+                          </span>
+                        </div>
                       </div>
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+                          corridor.status === 'On Time'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : corridor.status === 'Moderate Delay'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {corridor.status}
+                      </span>
                     </div>
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                        corridor.status === 'On Time'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : corridor.status === 'Moderate Delay'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {corridor.status}
-                    </span>
-                  </div>
 
-                  <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
-                    <div
-                      className={`h-full rounded-full ${
-                        corridor.reliabilityScore >= 90
-                          ? 'bg-emerald-500'
-                          : corridor.reliabilityScore >= 80
-                          ? 'bg-amber-500'
-                          : 'bg-red-500'
-                      }`}
-                      style={{ width: `${corridor.reliabilityScore}%` }}
-                    />
+                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
+                      <div
+                        className={`h-full rounded-full ${
+                          corridor.reliabilityScore >= 90
+                            ? 'bg-emerald-500'
+                            : corridor.reliabilityScore >= 80
+                            ? 'bg-amber-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{ width: `${corridor.reliabilityScore}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           {/* SMRT / SBS Transit Rail Reliability */}
-          <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-3">
+          <div id="section-mrt-reliability" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs space-y-3">
             <h3 className="text-[17px] font-bold text-[#191c1d] border-b border-[#e1e3e4] pb-2">
               MRT System Mean Kilometres Between Failures (MKBF)
             </h3>
@@ -628,7 +758,7 @@ export const HistoricalTrendsView: React.FC = () => {
         <MobilityDatasetsWidget />
 
         {/* 5. Top Bottlenecks Table */}
-        <div className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
+        <div id="section-top-bottlenecks" className="bg-white p-5 rounded-xl border border-[#c1c6d3] shadow-2xs">
           <div className="flex items-center gap-2 mb-3">
             <ShieldAlert className="w-5 h-5 text-amber-600" />
             <h3 className="text-[17px] font-bold text-[#191c1d]">
@@ -642,29 +772,37 @@ export const HistoricalTrendsView: React.FC = () => {
                 <tr className="border-b border-[#e1e3e4] text-[#727783] text-[11px] uppercase tracking-wider font-bold">
                   <th className="pb-2">Corridor Hotspot</th>
                   <th className="pb-2">Expressway</th>
-                  <th className="pb-2">Incident Rate / Week</th>
+                  <th className="pb-2">Incident Rate / Range</th>
                   <th className="pb-2">Avg Congestion Delay</th>
                   <th className="pb-2 text-right">Advisory Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#edeeef]">
-                {data.topBottlenecks.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-[#f8f9fa]">
-                    <td className="py-2.5 font-bold text-[#191c1d]">{item.location}</td>
-                    <td className="py-2.5">
-                      <span className="bg-[#004481] text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                        {item.expressway}
-                      </span>
-                    </td>
-                    <td className="py-2.5 font-mono text-[#414751]">{item.incidentFrequency} incidents/wk</td>
-                    <td className="py-2.5 font-mono text-amber-700 font-bold">+{item.avgDelayMin} mins</td>
-                    <td className="py-2.5 text-right">
-                      <span className="bg-amber-100 text-amber-900 text-[11px] font-semibold px-2 py-0.5 rounded">
-                        High Caution Zone
-                      </span>
+                {data.topBottlenecks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-4 text-center text-[#727783]">
+                      No hotspots found for {selectedExpressway}.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  data.topBottlenecks.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-[#f8f9fa]">
+                      <td className="py-2.5 font-bold text-[#191c1d]">{item.location}</td>
+                      <td className="py-2.5">
+                        <span className="bg-[#004481] text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                          {item.expressway}
+                        </span>
+                      </td>
+                      <td className="py-2.5 font-mono text-[#414751]">{item.incidentFrequency} incidents/{selectedDaysCount}d</td>
+                      <td className="py-2.5 font-mono text-amber-700 font-bold">+{item.avgDelayMin} mins</td>
+                      <td className="py-2.5 text-right">
+                        <span className="bg-amber-100 text-amber-900 text-[11px] font-semibold px-2 py-0.5 rounded">
+                          High Caution Zone
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

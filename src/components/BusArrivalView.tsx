@@ -177,7 +177,7 @@ export const BusArrivalView: React.FC = () => {
   };
 
   return (
-    <div id="bus-arrival-view" className="flex-1 bg-[#f8f9fa] p-4 md:p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+    <div id="bus-arrival-view" className="flex-1 md:mr-72 bg-[#f8f9fa] p-4 md:p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full pb-24">
       {/* Header Banner */}
       <div className="bg-white rounded-xl border border-[#c1c6d3] p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
