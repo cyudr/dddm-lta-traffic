@@ -1,43 +1,9 @@
-const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '';
-
-const EXPRESSWAY_COORDINATES: Record<string, { lat: number; lng: number }> = {
-  PIE: { lat: 1.3325, lng: 103.8200 },
-  AYE: { lat: 1.3125, lng: 103.7600 },
-  CTE: { lat: 1.3300, lng: 103.8540 },
-  KPE: { lat: 1.3450, lng: 103.8900 },
-  SLE: { lat: 1.4050, lng: 103.8200 },
-  BKE: { lat: 1.3800, lng: 103.7750 },
-  ECP: { lat: 1.3020, lng: 103.9100 },
-  TPE: { lat: 1.3850, lng: 103.9250 },
-  MCE: { lat: 1.2750, lng: 103.8580 },
-  KJE: { lat: 1.3780, lng: 103.7350 },
-};
-
-function convertLatLngToMapPercent(lat: number, lng: number) {
-  const minLat = 1.22;
-  const maxLat = 1.47;
-  const minLng = 103.60;
-  const maxLng = 104.04;
-
-  const latPercent = Math.max(10, Math.min(85, ((maxLat - lat) / (maxLat - minLat)) * 100));
-  const lngPercent = Math.max(10, Math.min(90, ((lng - minLng) / (maxLng - minLng)) * 100));
-
-  return {
-    latPercent: Math.round(latPercent),
-    lngPercent: Math.round(lngPercent),
-  };
-}
+import { fetchLTAEndpoint, EXPRESSWAY_COORDINATES, convertLatLngToMapPercent } from './_lib/lta';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');
   try {
-    const url = 'https://datamall2.mytransport.sg/ltaodataservice/TrafficIncidents';
-    const response = await fetch(url, {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('TrafficIncidents');
 
     if (!response.ok) {
       return res.status(200).json({

@@ -1,15 +1,9 @@
-const LTA_API_KEY = process.env.LTA_ACCOUNT_KEY || process.env.VITE_LTA_ACCOUNT_KEY || '';
+import { fetchLTAEndpoint } from './_lib/lta';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');
   try {
-    const url = 'https://datamall2.mytransport.sg/ltaodataservice/TrainServiceAlerts';
-    const response = await fetch(url, {
-      headers: {
-        AccountKey: LTA_API_KEY,
-        accept: 'application/json',
-      },
-    });
+    const response = await fetchLTAEndpoint('TrainServiceAlerts');
 
     if (!response.ok) {
       return res.status(200).json({
