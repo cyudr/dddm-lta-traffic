@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // Live Bus Arrival Timings (v3/BusArrival)
 export default async function handler(req: any, res: any) {

@@ -1,4 +1,4 @@
-import { LTA_API_KEY } from './_lib/lta';
+import { LTA_API_KEY } from '../lta';
 
 // Camera Image Binary Proxy
 export default async function handler(req: any, res: any) {

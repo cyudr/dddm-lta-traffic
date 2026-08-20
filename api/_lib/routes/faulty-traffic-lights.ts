@@ -1,10 +1,10 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
-// Planned & Active Road Works
+// Faulty Traffic Lights
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');
   try {
-    const response = await fetchLTAEndpoint('RoadWorks');
+    const response = await fetchLTAEndpoint('FaultyTrafficLights');
     if (response.ok) {
       const data = await response.json();
       return res.status(200).json({ success: true, value: data.value || [] });

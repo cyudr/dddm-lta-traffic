@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint, convertLatLngToMapPercent } from './_lib/lta';
+import { fetchLTAEndpoint, convertLatLngToMapPercent } from '../lta';
 
 // Live Traffic Camera Images (LTA DataMall Traffic-Images API)
 export default async function handler(req: any, res: any) {

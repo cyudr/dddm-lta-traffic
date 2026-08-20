@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // Real-time Available Taxis (Taxi-Availability)
 export default async function handler(req: any, res: any) {

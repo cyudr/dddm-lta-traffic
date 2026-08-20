@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // Official Taxi Stands Directory (TaxiStands)
 export default async function handler(req: any, res: any) {

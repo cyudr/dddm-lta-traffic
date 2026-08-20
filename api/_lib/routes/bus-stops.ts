@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // Bus Stops Directory & Search (BusStops)
 // Note: each serverless invocation is stateless, so this in-memory cache only

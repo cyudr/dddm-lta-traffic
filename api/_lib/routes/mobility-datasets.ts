@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // LTA Open Data Mobility Datasets (Passenger Volumes & Traffic Flow)
 export default async function handler(req: any, res: any) {

@@ -1,13 +1,13 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
-// Live Traffic Speed Bands
+// Planned & Active Road Works
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');
   try {
-    const response = await fetchLTAEndpoint('TrafficSpeedBandsv2');
+    const response = await fetchLTAEndpoint('RoadWorks');
     if (response.ok) {
       const data = await response.json();
-      return res.status(200).json({ success: true, count: (data.value || []).length, value: data.value || [] });
+      return res.status(200).json({ success: true, value: data.value || [] });
     }
     res.status(200).json({ success: false, value: [] });
   } catch (error: any) {

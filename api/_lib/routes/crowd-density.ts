@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint, MRT_LINE_STATION_NAMES, MRT_STATIONS_BY_LINE, BUSY_HUBS } from './_lib/lta';
+import { fetchLTAEndpoint, MRT_LINE_STATION_NAMES, MRT_STATIONS_BY_LINE, BUSY_HUBS } from '../lta';
 
 // MRT Station Platform Crowd Density (PCDRealTime)
 export default async function handler(req: any, res: any) {

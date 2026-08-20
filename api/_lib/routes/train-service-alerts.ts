@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');

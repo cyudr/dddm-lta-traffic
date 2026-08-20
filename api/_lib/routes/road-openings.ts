@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // Active Road Openings & Utility Works (RoadOpenings)
 export default async function handler(req: any, res: any) {

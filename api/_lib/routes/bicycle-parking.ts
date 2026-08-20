@@ -1,4 +1,4 @@
-import { fetchLTAEndpoint } from './_lib/lta';
+import { fetchLTAEndpoint } from '../lta';
 
 // Bicycle Parking Racks (BicycleParkingv2)
 export default async function handler(req: any, res: any) {
